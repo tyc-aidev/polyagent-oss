@@ -72,7 +72,9 @@ See [`.env.example`](.env.example) for a full template.
 | `pnpm lint` | ESLint |
 | `pnpm db:migrate` | Create/apply migrations (dev) |
 | `pnpm db:migrate:deploy` | Apply migrations (prod/CI) |
-| `pnpm db:seed` | Seed demo bot |
+| `pnpm db:seed` | Seed demo bot (idempotent) |
+| `pnpm db:setup` | Migrate + seed (idempotent, for CI/deploy) |
+| `pnpm verify:gamma` | Live Polymarket Gamma API check |
 
 ### Smoke test (alpha verification)
 

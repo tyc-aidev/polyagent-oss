@@ -12,6 +12,8 @@
     "db:migrate": "pnpm --filter @polyagent/db migrate:dev",
     "db:migrate:deploy": "pnpm --filter @polyagent/db migrate:deploy",
     "db:seed": "pnpm --filter @polyagent/db seed",
+    "db:setup": "node scripts/db-setup.mjs",
+    "verify:gamma": "node scripts/verify-gamma.mjs",
     "smoke": "node scripts/smoke-docker.mjs",
     "smoke:cloudflare": "node scripts/verify-cloudflare.mjs",
     "postinstall": "pnpm db:generate"

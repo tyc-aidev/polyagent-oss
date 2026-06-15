@@ -33,6 +33,27 @@ jobs:
       - name: Test
         run: pnpm test
 
+  integration:
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Polymarket Gamma API (live)
+        run: pnpm verify:gamma
+
   smoke:
     runs-on: ubuntu-latest
     needs: check
@@ -65,8 +86,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Migrate and seed
-        run: pnpm db:migrate:deploy && pnpm db:seed
+      - name: Setup database (idempotent migrate + seed)
+        run: pnpm db:setup
+        env:
+          DATABASE_URL: postgresql://polyagent:polyagent@localhost:5432/polyagent
+
+      - name: Re-run database setup (idempotency check)
+        run: pnpm db:setup
         env:
           DATABASE_URL: postgresql://polyagent:polyagent@localhost:5432/polyagent
 

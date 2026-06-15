@@ -117,21 +117,39 @@ cd apps/web
 pnpm run deploy          # opennextjs-cloudflare build && deploy
 ```
 
-## 6. CI migration workflow
+## 6. CI/CD database + deploy workflow
 
-Run migrations before every production deploy. Store the **direct** Prisma Postgres `postgresql://` URL as a GitHub secret (`DATABASE_URL`).
+Use the idempotent setup script before every deploy (safe to re-run):
 
-```yaml
-- name: Apply database migrations
-  run: pnpm db:migrate:deploy
-  env:
-    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+```bash
+DATABASE_URL=postgresql://... pnpm db:setup
 ```
 
-Recommended deploy order:
+This runs `prisma migrate deploy` (applies only pending migrations) and `pnpm db:seed` (skips if the demo bot already exists).
 
-1. `pnpm db:migrate:deploy`
+### GitHub Actions
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | push/PR to `main` | lint, test, live Gamma check, Docker smoke with idempotent `db:setup` |
+| `deploy.yml` | `workflow_dispatch` or `v*` tag | migrate + seed → Cloudflare deploy → smoke verify |
+
+**Required GitHub secrets for `deploy.yml`:**
+
+| Secret | Description |
+|--------|-------------|
+| `DATABASE_URL` | Direct Prisma Postgres `postgresql://` URL (migrations + Hyperdrive local build string) |
+| `CLOUDFLARE_API_TOKEN` | Wrangler deploy token |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `SMOKE_BASE_URL` | Deployed Worker URL (e.g. `https://polyagent-web.<account>.workers.dev`) |
+| `CRON_SECRET` | Worker cron secret (for post-deploy smoke) |
+| `DASHBOARD_PASSWORD` | Dashboard password (for post-deploy smoke) |
+
+Recommended manual deploy order:
+
+1. `DATABASE_URL=... pnpm db:setup`
 2. `cd apps/web && pnpm run deploy`
+3. `pnpm smoke:cloudflare`
 
 ## 7. Verify deployment
 
