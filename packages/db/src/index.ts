@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as typeof globalThis & {
   prisma?: PrismaClient;
@@ -14,5 +14,5 @@ if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
 
-export { PrismaClient };
+export { PrismaClient, Prisma };
 export type { Bot, PaperPosition, AgentDecision, BotTick, MarketPriceSnapshot } from "@prisma/client";
