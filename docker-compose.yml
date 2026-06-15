@@ -24,6 +24,7 @@ services:
       GAMMA_API_BASE: https://gamma-api.polymarket.com
       MARKET_CACHE_TTL_SECONDS: 60
       SCHEDULER_MODE: docker
+      # CRON_SECRET: optional; required to call /api/internal/* in production NODE_ENV
     ports:
       - "3000:3000"
     depends_on:

@@ -61,11 +61,30 @@ See [`.env.example`](.env.example) for a full template.
 |---------|-------------|
 | `pnpm dev` | Start Next.js dev server |
 | `pnpm test` | Run unit tests |
+| `pnpm smoke` | End-to-end API smoke test (requires running app) |
+| `pnpm smoke:cloudflare` | Verify a Cloudflare deployment |
 | `pnpm typecheck` | TypeScript check |
 | `pnpm lint` | ESLint |
 | `pnpm db:migrate` | Create/apply migrations (dev) |
 | `pnpm db:migrate:deploy` | Apply migrations (prod/CI) |
 | `pnpm db:seed` | Seed demo bot |
+
+### Smoke test (alpha verification)
+
+With Postgres running, migrations applied, seed complete, and the dev server up:
+
+```bash
+pnpm dev          # terminal 1
+pnpm smoke        # terminal 2
+```
+
+Set `DASHBOARD_PASSWORD` in the environment if auth is enabled. When using `pnpm start` (production mode), the server and smoke client both need the same `CRON_SECRET`.
+
+For Cloudflare:
+
+```bash
+SMOKE_BASE_URL=https://your-worker.workers.dev CRON_SECRET=... pnpm smoke:cloudflare
+```
 
 ## Cloudflare deploy
 

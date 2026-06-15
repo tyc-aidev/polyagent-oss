@@ -84,22 +84,26 @@ Recommended deploy order:
 1. `pnpm db:migrate:deploy`
 2. `cd apps/web && pnpm run deploy`
 
-## 7. Verify scheduler
+## 7. Verify deployment
 
-After deploy:
+Run the automated verification script:
+
+```bash
+SMOKE_BASE_URL=https://<your-worker>.workers.dev \
+CRON_SECRET=<your-secret> \
+DASHBOARD_PASSWORD=<if-set> \
+pnpm smoke:cloudflare
+```
+
+This checks health, cron auth, markets (KV cache), security headers, and the seeded demo bot.
+
+For live scheduler activity:
 
 ```bash
 npx wrangler tail
 ```
 
 Wait for a Cron trigger (every 5 minutes). You should see enqueue activity and tick results in the bot detail UI.
-
-Manual verification:
-
-```bash
-curl -X POST https://<your-worker>.workers.dev/api/internal/cron \
-  -H "x-cron-secret: $CRON_SECRET"
-```
 
 ## 8. Local Cloudflare preview
 

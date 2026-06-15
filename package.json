@@ -1,5 +1,6 @@
 {
   "name": "polyagent-oss",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @polyagent/web dev",
@@ -11,6 +12,8 @@
     "db:migrate": "pnpm --filter @polyagent/db migrate:dev",
     "db:migrate:deploy": "pnpm --filter @polyagent/db migrate:deploy",
     "db:seed": "pnpm --filter @polyagent/db seed",
+    "smoke": "node scripts/smoke-docker.mjs",
+    "smoke:cloudflare": "node scripts/verify-cloudflare.mjs",
     "postinstall": "pnpm db:generate"
   },
   "devDependencies": {

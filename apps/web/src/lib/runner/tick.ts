@@ -1,7 +1,7 @@
 import { prisma, type Prisma } from "@polyagent/db";
 import type { AgentDecision, MarketSnapshot } from "@polyagent/shared";
 import { createAgent } from "@/lib/agents/registry";
-import { MemoryCache } from "@/lib/polymarket/cache";
+import { getCacheStore } from "@/lib/polymarket/get-cache";
 import { GammaClient } from "@/lib/polymarket/gamma";
 import { runSimulatorTick } from "@/lib/paper-trading/simulator";
 import {
@@ -44,7 +44,7 @@ export async function runBotTick(botId: string): Promise<TickResult> {
     const positions = await prisma.paperPosition.findMany({ where: { botId } });
     let portfolio = portfolioFromDb(botId, config, positions);
 
-    const gamma = new GammaClient(new MemoryCache());
+    const gamma = new GammaClient(getCacheStore());
     const markets = new Map<string, MarketSnapshot>();
     const decisions: AgentDecision[] = [];
     const snapshots: Array<{
