@@ -1,6 +1,6 @@
 # Cloudflare Deployment Guide
 
-PolyAgent deploys to Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare). PostgreSQL is accessed through [Prisma Accelerate](https://www.prisma.io/accelerate) because Workers cannot hold persistent TCP connections.
+PolyAgent deploys to Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare). PostgreSQL is accessed through [Cloudflare Hyperdrive](https://developers.cloudflare.com/hyperdrive/) (connection pooling for Workers). Prisma Postgres or any hosted PostgreSQL works as the origin database.
 
 ## Prerequisites
 
@@ -8,14 +8,23 @@ PolyAgent deploys to Cloudflare Workers via [OpenNext](https://opennext.js.org/c
 - Prisma Postgres database (or any PostgreSQL with Accelerate enabled)
 - `wrangler` CLI authenticated (`wrangler login`)
 
-## 1. Prisma Postgres + Accelerate
+## 1. PostgreSQL + Hyperdrive
 
-1. Create a database at [Prisma Postgres](https://prisma.io/postgres).
-2. Enable **Accelerate** on the project.
-3. Copy the Accelerate connection string (`prisma://accelerate.prisma-data.net/...`).
-4. Set it as `DATABASE_URL` in Cloudflare Worker secrets.
+1. Provision a PostgreSQL database (e.g. [Prisma Postgres](https://prisma.io/postgres) via `npx create-db create --json`, Neon, or RDS).
+2. Run migrations: `DATABASE_URL=postgresql://... pnpm db:migrate:deploy && pnpm db:seed`
+3. Create Hyperdrive:
 
-Local and Docker paths use a direct `postgresql://` URL. Accelerate is only required for the Cloudflare deploy path.
+```bash
+cd apps/web
+wrangler hyperdrive create polyagent-db \
+  --connection-string "$DATABASE_URL" \
+  --binding HYPERDRIVE \
+  --update-config
+```
+
+4. For local OpenNext builds, set `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` in `apps/web/.dev.vars` (gitignored).
+
+Local Docker paths use a direct `postgresql://` URL without Hyperdrive.
 
 ## 2. KV namespace (market cache)
 

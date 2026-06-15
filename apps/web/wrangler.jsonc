@@ -38,8 +38,8 @@
 	"kv_namespaces": [
 		{
 			"binding": "MARKET_CACHE",
-			"id": "REPLACE_WITH_KV_NAMESPACE_ID",
-			"preview_id": "REPLACE_WITH_KV_NAMESPACE_ID"
+			"id": "04d7695edeed4872a2fa7966eaaf42f3",
+			"preview_id": "04d7695edeed4872a2fa7966eaaf42f3"
 		}
 	],
 	"queues": {
@@ -58,12 +58,20 @@
 		]
 	},
 	"triggers": {
-		"crons": ["*/5 * * * *"]
+		"crons": [
+			"*/5 * * * *"
+		]
 	},
 	"observability": {
 		"enabled": true
 	},
-	"upload_source_maps": true
+	"upload_source_maps": true,
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "358f99bce03a4a09ad1546a7f03706a7"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

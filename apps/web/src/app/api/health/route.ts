@@ -1,8 +1,9 @@
-import { prisma } from "@polyagent/db";
 import { NextResponse } from "next/server";
+import { getPrismaAsync } from "@/lib/db";
 
 export async function GET() {
   try {
+    const prisma = await getPrismaAsync();
     await prisma.$queryRaw`SELECT 1`;
     return NextResponse.json({ status: "ok", database: "connected" });
   } catch (error) {

@@ -1,4 +1,5 @@
-import { prisma, type Prisma } from "@polyagent/db";
+import type { Prisma } from "@polyagent/db";
+import { getPrismaAsync } from "@/lib/db";
 import type { AgentDecision, MarketSnapshot } from "@polyagent/shared";
 import { createAgent } from "@/lib/agents/registry";
 import { getCacheStore } from "@/lib/polymarket/get-cache";
@@ -21,6 +22,7 @@ export interface TickResult {
 }
 
 export async function runBotTick(botId: string): Promise<TickResult> {
+  const prisma = await getPrismaAsync();
   const bot = await prisma.bot.findUnique({ where: { id: botId } });
   if (!bot) throw new Error(`Bot not found: ${botId}`);
   if (bot.status !== "active") throw new Error(`Bot ${botId} is not active`);
@@ -184,6 +186,7 @@ export async function runBotTick(botId: string): Promise<TickResult> {
 }
 
 export async function runActiveBotTicks(): Promise<TickResult[]> {
+  const prisma = await getPrismaAsync();
   const maxBots = Number(process.env.MAX_ACTIVE_BOTS ?? 10);
   const bots = await prisma.bot.findMany({
     where: { status: "active" },

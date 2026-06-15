@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { prisma } from "@polyagent/db";
+import { getPrisma } from "@/lib/db";
 import { BotStatusBadge } from "@/components/bots/bot-status-badge";
 import { RunTickButton } from "@/components/bots/run-tick-button";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { parseBotConfig, getCashBalance } from "@/lib/runner/bot-config";
 import { summarizeFromPositions } from "@/lib/api/portfolio-summary";
 
 export default async function DemoPage() {
+  const prisma = getPrisma();
   const demoBot = await prisma.bot.findFirst({
     where: { name: "Demo Threshold Bot", status: { not: "archived" } },
     include: { positions: true },

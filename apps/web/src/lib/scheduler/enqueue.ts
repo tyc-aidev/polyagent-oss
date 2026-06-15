@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { prisma } from "@polyagent/db";
+import { getPrismaAsync } from "@/lib/db";
 import { runActiveBotTicks } from "@/lib/runner/tick";
 
 export interface EnqueueResult {
@@ -19,6 +19,7 @@ async function getTickQueue(): Promise<Queue<{ botId: string }> | null> {
 }
 
 export async function enqueueActiveBots(): Promise<EnqueueResult> {
+  const prisma = await getPrismaAsync();
   const maxBots = Number(process.env.MAX_ACTIVE_BOTS ?? 10);
   const bots = await prisma.bot.findMany({
     where: { status: "active" },

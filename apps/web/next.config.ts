@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
   transpilePackages: ["@polyagent/shared", "@polyagent/db"],
+  serverExternalPackages: ["@prisma/client", ".prisma/client", "pg", "pg-cloudflare"],
 };
 
 export default nextConfig;

@@ -1,4 +1,5 @@
-import { prisma, type Prisma } from "@polyagent/db";
+import type { Prisma } from "@polyagent/db";
+import { getPrismaAsync } from "@/lib/db";
 import {
   createBotSchema,
   updateBotSchema,
@@ -20,6 +21,7 @@ export interface BotSummary {
 }
 
 export async function listBots(): Promise<BotSummary[]> {
+  const prisma = await getPrismaAsync();
   const bots = await prisma.bot.findMany({
     where: { status: { not: "archived" } },
     orderBy: { createdAt: "desc" },
@@ -55,6 +57,7 @@ export async function listBots(): Promise<BotSummary[]> {
 }
 
 export async function createBot(input: CreateBotInput) {
+  const prisma = await getPrismaAsync();
   const data = createBotSchema.parse(input);
   const config = {
     ...data.config,
@@ -71,6 +74,7 @@ export async function createBot(input: CreateBotInput) {
 }
 
 export async function getBot(id: string) {
+  const prisma = await getPrismaAsync();
   const bot = await prisma.bot.findUnique({
     where: { id },
     include: { positions: true },
@@ -94,6 +98,7 @@ export async function getBot(id: string) {
 }
 
 export async function updateBot(id: string, input: UpdateBotInput) {
+  const prisma = await getPrismaAsync();
   const data = updateBotSchema.parse(input);
   const existing = await prisma.bot.findUnique({ where: { id } });
   if (!existing || existing.status === "archived") {
@@ -128,6 +133,7 @@ export async function updateBot(id: string, input: UpdateBotInput) {
 }
 
 export async function archiveBot(id: string) {
+  const prisma = await getPrismaAsync();
   const existing = await prisma.bot.findUnique({ where: { id } });
   if (!existing || existing.status === "archived") {
     throw new Error(`Bot not found: ${id}`);
@@ -145,7 +151,8 @@ export async function getBotPortfolio(id: string) {
 }
 
 export async function getBotPositions(id: string) {
-  await assertBotExists(id);
+  const prisma = await getPrismaAsync();
+  await assertBotExists(id, prisma);
   const positions = await prisma.paperPosition.findMany({
     where: { botId: id, status: "open" },
     orderBy: { updatedAt: "desc" },
@@ -154,7 +161,8 @@ export async function getBotPositions(id: string) {
 }
 
 export async function getBotDecisions(id: string, pagination: PaginationParams) {
-  await assertBotExists(id);
+  const prisma = await getPrismaAsync();
+  await assertBotExists(id, prisma);
   const [items, total] = await Promise.all([
     prisma.agentDecision.findMany({
       where: { botId: id },
@@ -168,7 +176,8 @@ export async function getBotDecisions(id: string, pagination: PaginationParams) 
 }
 
 export async function getBotTicks(id: string, pagination: PaginationParams) {
-  await assertBotExists(id);
+  const prisma = await getPrismaAsync();
+  await assertBotExists(id, prisma);
   const [items, total] = await Promise.all([
     prisma.botTick.findMany({
       where: { botId: id },
@@ -181,7 +190,7 @@ export async function getBotTicks(id: string, pagination: PaginationParams) {
   return { items, total, ...pagination };
 }
 
-async function assertBotExists(id: string) {
+async function assertBotExists(id: string, prisma: Awaited<ReturnType<typeof getPrismaAsync>>) {
   const bot = await prisma.bot.findUnique({ where: { id } });
   if (!bot || bot.status === "archived") {
     throw new Error(`Bot not found: ${id}`);

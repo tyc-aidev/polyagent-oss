@@ -4,6 +4,7 @@ node_modules
 dist
 .env
 .env.local
+.deploy-secrets.local
 .dev.vars
 *.log
 .DS_Store
