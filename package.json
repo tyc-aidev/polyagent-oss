@@ -1,0 +1,19 @@
+{
+  "name": "polyagent-oss",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @polyagent/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @polyagent/db generate",
+    "db:migrate": "pnpm --filter @polyagent/db migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @polyagent/db migrate:deploy",
+    "db:seed": "pnpm --filter @polyagent/db seed",
+    "postinstall": "pnpm db:generate"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.4"
+  }
+}

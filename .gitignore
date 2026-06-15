@@ -1,0 +1,15 @@
+node_modules
+.next
+.open-next
+dist
+.env
+.env.local
+.dev.vars
+*.log
+.DS_Store
+coverage
+.turbo
+.wrangler
+*.tsbuildinfo
+.playwright-mcp
+ployagent
