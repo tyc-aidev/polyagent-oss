@@ -100,6 +100,13 @@ export async function updateBot(id: string, input: UpdateBotInput) {
     throw new Error(`Bot not found: ${id}`);
   }
 
+  if (data.status === "active") {
+    const configToCheck = data.config ?? parseBotConfig(existing.config);
+    if (configToCheck.markets.length === 0) {
+      throw new Error("Cannot activate bot with no markets configured");
+    }
+  }
+
   const currentConfig = parseBotConfig(existing.config);
   const nextConfig = data.config
     ? {

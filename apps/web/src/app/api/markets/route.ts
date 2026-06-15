@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
-import { handleApiError } from "@/lib/api/errors";
+import { apiError, handleApiError } from "@/lib/api/errors";
 import { listMarkets } from "@/lib/api/markets";
+import { rateLimit } from "@/lib/api/rate-limit";
 
 export async function GET(request: Request) {
   try {
+    const ip = request.headers.get("x-forwarded-for") ?? "local";
+    if (!rateLimit(`markets:${ip}`, 60, 60_000)) {
+      return apiError("Too many requests", "rate_limited", 429);
+    }
+
     const { searchParams } = new URL(request.url);
-    const limit = Number(searchParams.get("limit") ?? 20);
+    const rawLimit = Number(searchParams.get("limit") ?? 20);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 50) : 20;
     const q = searchParams.get("q") ?? undefined;
     const markets = await listMarkets(limit, q);
     return NextResponse.json({ markets });

@@ -21,23 +21,26 @@ export interface TickResult {
 }
 
 export async function runBotTick(botId: string): Promise<TickResult> {
-  const running = await prisma.botTick.findFirst({
-    where: { botId, status: "running" },
-  });
-  if (running) {
-    throw new Error(`Bot ${botId} already has a running tick`);
-  }
-
   const bot = await prisma.bot.findUnique({ where: { id: botId } });
   if (!bot) throw new Error(`Bot not found: ${botId}`);
   if (bot.status !== "active") throw new Error(`Bot ${botId} is not active`);
 
-  const tick = await prisma.botTick.create({
-    data: { botId, status: "running" },
+  const config = parseBotConfig(bot.config);
+  if (config.markets.length === 0) {
+    throw new Error(`Bot ${botId} has no markets configured`);
+  }
+
+  const tick = await prisma.$transaction(async (tx) => {
+    const running = await tx.botTick.findFirst({
+      where: { botId, status: "running" },
+    });
+    if (running) {
+      throw new Error(`Bot ${botId} already has a running tick`);
+    }
+    return tx.botTick.create({ data: { botId, status: "running" } });
   });
 
   try {
-    const config = parseBotConfig(bot.config);
     const positions = await prisma.paperPosition.findMany({ where: { botId } });
     let portfolio = portfolioFromDb(botId, config, positions);
 
