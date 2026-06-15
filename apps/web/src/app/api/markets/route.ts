@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { apiError, handleApiError } from "@/lib/api/errors";
 import { listMarkets } from "@/lib/api/markets";
-import { rateLimit } from "@/lib/api/rate-limit";
+import { checkRateLimit } from "@/lib/api/request";
 
 export async function GET(request: Request) {
   try {
-    const ip = request.headers.get("x-forwarded-for") ?? "local";
-    if (!rateLimit(`markets:${ip}`, 60, 60_000)) {
+    if (!checkRateLimit(request, "markets", 60, 60_000)) {
       return apiError("Too many requests", "rate_limited", 429);
     }
 

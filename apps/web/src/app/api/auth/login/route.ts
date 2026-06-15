@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
+import { timingSafeEqual } from "@/lib/auth/timing-safe";
+import { apiError } from "@/lib/api/errors";
+import { checkRateLimit, readJsonBody } from "@/lib/api/request";
 
 export async function POST(request: Request) {
   const password = process.env.DASHBOARD_PASSWORD;
@@ -6,18 +10,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const body = (await request.json()) as { password?: string };
-  if (body.password !== password) {
-    return NextResponse.json({ error: "Invalid password", code: "unauthorized" }, { status: 401 });
+  if (!checkRateLimit(request, "auth:login", 10, 60_000)) {
+    return apiError("Too many login attempts", "rate_limited", 429);
   }
 
+  const body = await readJsonBody<{ password?: string }>(request);
+  if (!body.password || !timingSafeEqual(body.password, password)) {
+    return apiError("Invalid password", "unauthorized", 401);
+  }
+
+  const token = await createSessionToken();
   const response = NextResponse.json({ ok: true });
-  response.cookies.set("polyagent_session", password, {
+  response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: SESSION_MAX_AGE_SECONDS,
   });
   return response;
 }

@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { verifySessionToken } from "@/lib/auth/session";
+import { withSecurityHeaders } from "@/lib/security/headers";
 
-const PUBLIC_PATHS = ["/", "/login", "/api/health", "/api/auth/login"];
+const PUBLIC_PATHS = [
+  "/",
+  "/login",
+  "/api/health",
+  "/api/auth/login",
+  "/api/internal",
+];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some(
@@ -9,23 +17,28 @@ function isPublic(pathname: string): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const password = process.env.DASHBOARD_PASSWORD;
-  if (!password) return NextResponse.next();
-
   const { pathname } = request.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+
+  if (!password || isPublic(pathname)) {
+    return withSecurityHeaders(NextResponse.next());
+  }
 
   const session = request.cookies.get("polyagent_session")?.value;
-  if (session === password) return NextResponse.next();
+  if (session && (await verifySessionToken(session))) {
+    return withSecurityHeaders(NextResponse.next());
+  }
 
   if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Unauthorized", code: "unauthorized" }, { status: 401 });
+    return withSecurityHeaders(
+      NextResponse.json({ error: "Unauthorized", code: "unauthorized" }, { status: 401 }),
+    );
   }
 
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set("next", pathname);
-  return NextResponse.redirect(loginUrl);
+  return withSecurityHeaders(NextResponse.redirect(loginUrl));
 }
 
 export const config = {

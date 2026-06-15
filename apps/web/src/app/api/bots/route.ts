@@ -1,7 +1,8 @@
 import type { CreateBotInput } from "@polyagent/shared";
 import { NextResponse } from "next/server";
 import { createBot, listBots } from "@/lib/api/bots";
-import { handleApiError } from "@/lib/api/errors";
+import { apiError, handleApiError } from "@/lib/api/errors";
+import { checkRateLimit, readJsonBody } from "@/lib/api/request";
 
 export async function GET() {
   try {
@@ -14,7 +15,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as CreateBotInput;
+    if (!checkRateLimit(request, "bots:create", 20, 60_000)) {
+      return apiError("Too many requests", "rate_limited", 429);
+    }
+
+    const body = await readJsonBody<CreateBotInput>(request);
     const bot = await createBot(body);
     return NextResponse.json(bot, { status: 201 });
   } catch (error) {
