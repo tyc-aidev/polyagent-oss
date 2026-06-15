@@ -1,12 +1,12 @@
 import type { MarketSnapshot } from "@polyagent/shared";
-import { MemoryCache } from "@/lib/polymarket/cache";
+import { getCacheStore } from "@/lib/polymarket/get-cache";
 import { GammaClient } from "@/lib/polymarket/gamma";
 
 let gammaClient: GammaClient | null = null;
 
 function getGammaClient(): GammaClient {
   if (!gammaClient) {
-    gammaClient = new GammaClient(new MemoryCache());
+    gammaClient = new GammaClient(getCacheStore());
   }
   return gammaClient;
 }

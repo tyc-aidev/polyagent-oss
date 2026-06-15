@@ -9,12 +9,15 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "polyagent-web",
-	"main": ".open-next/worker.js",
+	"main": "worker-entry.ts",
 	"compatibility_date": "2026-06-11",
 	"compatibility_flags": [
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	"vars": {
+		"SCHEDULER_MODE": "cloudflare"
+	},
 	"assets": {
 		"binding": "ASSETS",
 		"directory": ".open-next/assets"
@@ -32,6 +35,31 @@
 			"service": "polyagent-web"
 		}
 	],
+	"kv_namespaces": [
+		{
+			"binding": "MARKET_CACHE",
+			"id": "REPLACE_WITH_KV_NAMESPACE_ID",
+			"preview_id": "REPLACE_WITH_KV_NAMESPACE_ID"
+		}
+	],
+	"queues": {
+		"producers": [
+			{
+				"binding": "TICK_QUEUE",
+				"queue": "polyagent-ticks"
+			}
+		],
+		"consumers": [
+			{
+				"queue": "polyagent-ticks",
+				"max_batch_size": 5,
+				"max_batch_timeout": 30
+			}
+		]
+	},
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
 	"observability": {
 		"enabled": true
 	},
