@@ -27,4 +27,4 @@ First public alpha release. Paper trading only — no live execution.
 - Timing-safe comparison for secrets
 - `CRON_SECRET` protection on internal scheduler routes
 
-[0.1.0]: https://github.com/polyagent-oss/polyagent/releases/tag/v0.1.0
+[0.1.0]: https://github.com/tyc-aidev/polyagent-oss/releases/tag/v0.1.0

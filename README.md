@@ -1,6 +1,10 @@
 # PolyAgent OSS
 
-Open-source, self-hostable platform for **paper trading** prediction market bots. PolyAgent connects to the public [Polymarket Gamma API](https://gamma-api.polymarket.com) for market data and simulates trades locally — no wallets, no live execution.
+[![CI](https://github.com/tyc-aidev/polyagent-oss/actions/workflows/ci.yml/badge.svg)](https://github.com/tyc-aidev/polyagent-oss/actions/workflows/ci.yml)
+
+Open-source, self-hostable platform for **paper trading** prediction market bots.
+
+**Repository:** https://github.com/tyc-aidev/polyagent-oss PolyAgent connects to the public [Polymarket Gamma API](https://gamma-api.polymarket.com) for market data and simulates trades locally — no wallets, no live execution.
 
 ## Features
 
