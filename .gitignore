@@ -13,3 +13,4 @@ coverage
 *.tsbuildinfo
 .playwright-mcp
 ployagent
+*.pptx
