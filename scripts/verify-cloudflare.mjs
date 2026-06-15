@@ -50,10 +50,27 @@ async function main() {
     assert(body?.database === "connected", `Database not connected: ${JSON.stringify(body)}`);
   }
 
+  if (PASSWORD) {
+    logStep("Dashboard auth enforced");
+    {
+      const { status } = await api("/api/bots");
+      assert(status === 401, `Expected 401 for unauthenticated /api/bots, got ${status}`);
+    }
+  }
+
   logStep("Cron rejects missing secret");
   {
     const { status } = await api("/api/internal/cron", { method: "POST" });
     assert(status === 401, `Expected 401 without cron secret, got ${status}`);
+  }
+
+  logStep("Cron rejects invalid secret");
+  {
+    const { status } = await api("/api/internal/cron", {
+      method: "POST",
+      headers: { "x-cron-secret": "invalid-secret" },
+    });
+    assert(status === 401, `Expected 401 for invalid cron secret, got ${status}`);
   }
 
   logStep("Cron accepts valid secret");

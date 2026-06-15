@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/api/request";
 import { runBotTick } from "@/lib/runner/tick";
 import { isAuthorizedInternalRequest } from "@/lib/scheduler/auth";
 
@@ -7,7 +8,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as { botId?: string };
+  let body: { botId?: string };
+  try {
+    body = await readJsonBody<{ botId?: string }>(request);
+  } catch {
+    body = {};
+  }
   if (!body.botId) {
     return NextResponse.json({ error: "botId required" }, { status: 400 });
   }
