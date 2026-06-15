@@ -52,7 +52,7 @@ Deliver a demo-ready platform where a user can, within 10 minutes:
 - Monitoring views: decision log, positions, P&L, tick history
 - Pre-seeded demo bot (`/demo` onboarding path)
 - Self-host via Docker Compose (app + PostgreSQL)
-- Cloudflare deploy via OpenNext (Prisma Postgres + Accelerate)
+- Cloudflare deploy via OpenNext (Prisma Postgres + Hyperdrive)
 - Legal disclaimers in UI and documentation
 
 **Non-Functional**
@@ -87,7 +87,7 @@ Deliver a demo-ready platform where a user can, within 10 minutes:
 2. **End-to-end flow** — create bot → tick runs → decisions appear → P&L updates.
 3. **Clean interfaces** — `IAgent`, Prisma schema, API contracts stable before UI polish.
 4. **Self-host path** — `docker compose up` works on a fresh machine with no Cloudflare account.
-5. **Cloudflare deploy path** — documented, one-command, with Prisma Accelerate setup guide.
+5. **Cloudflare deploy path** — documented, one-command, with Prisma Postgres + Hyperdrive setup guide.
 6. **Demo experience** — pre-seeded bot + `/demo` page so evaluators see value in <5 minutes.
 
 ---
@@ -154,7 +154,7 @@ Deliver a demo-ready platform where a user can, within 10 minutes:
 |------|------------|--------|------------|
 | Scope creep on agents | High | High | MVP ships ThresholdAgent only; LLM deferred to v0.2 |
 | Cloudflare Worker limits (CPU, bundle size) | Medium | Medium | No LangChain.js in MVP; tick work is lightweight; Queue offloads |
-| Prisma + Workers connection issues | Medium | High | Prisma Accelerate required for CF path; documented in setup guide |
+| Prisma + Workers connection issues | Medium | High | Hyperdrive required for CF path; documented in setup guide |
 | User confusion (paper vs real) | Medium | High | Persistent UI banner; `mode` locked to `paper` in API; no execution code |
 | Legal exposure | Low–Medium | High | Education framing; no keys stored; no live execution; lawyer review before Phase 2 |
 | Gamma API rate limits / downtime | Medium | Medium | 60s price cache; graceful degradation in UI; retry with backoff |
@@ -170,7 +170,7 @@ Deliver a demo-ready platform where a user can, within 10 minutes:
 | Frontend + API | Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui |
 | ORM | Prisma |
 | Database | PostgreSQL — Prisma Postgres (Cloudflare) / Docker PostgreSQL (local/self-host) |
-| Edge DB access | Prisma Accelerate (Cloudflare deploy only) |
+| Edge DB access | Cloudflare Hyperdrive (Cloudflare deploy only) |
 | Deployment (primary) | Cloudflare Workers via OpenNext |
 | Self-host | Docker Compose (web + postgres) |
 | Market data | Polymarket Gamma API (public, unauthenticated) |
@@ -237,7 +237,7 @@ Tasks are ordered by dependency. Each is sized for a single PR.
 ### Sprint 5: Deploy + Docs (Week 6)
 
 - [ ] **T-033** Wrangler config (Cron, Queue, KV bindings)
-- [ ] **T-034** Prisma Accelerate setup guide + migration workflow for Cloudflare CI
+- [ ] **T-034** Prisma Postgres + Hyperdrive setup guide + migration workflow for Cloudflare CI
 - [ ] **T-035** Self-host README (Docker Compose walkthrough)
 - [ ] **T-036** Legal disclaimers doc + CONTRIBUTING.md
 - [ ] **T-037** Optional `DASHBOARD_PASSWORD` middleware
@@ -275,7 +275,7 @@ MVP is complete when all of the following are true:
 |----------|----------|
 | Database | Prisma + PostgreSQL (not D1) |
 | Local database | Docker PostgreSQL via Compose |
-| Cloudflare database | Prisma Postgres + Accelerate |
+| Cloudflare database | Prisma Postgres + Hyperdrive |
 | Auth | Single-tenant; optional `DASHBOARD_PASSWORD` for public deploys |
 | MVP agent | ThresholdAgent only (rule-based, no LLM) |
 | Historical replay | Phase 1.5 (not MVP) |

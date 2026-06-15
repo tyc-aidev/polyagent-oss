@@ -93,7 +93,7 @@ SMOKE_BASE_URL=https://your-worker.workers.dev CRON_SECRET=... pnpm smoke:cloudf
 
 ## Cloudflare deploy
 
-See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) for Prisma Accelerate setup, KV namespace creation, and CI migration workflow.
+See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) for Prisma Postgres + Hyperdrive setup, KV namespace creation, and CI migration workflow.
 
 ## Security
 

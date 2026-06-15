@@ -48,7 +48,7 @@ PolyAgent OSS follows a **hybrid architecture** designed for rapid MVP delivery 
 - **Paper trading first** — Simulation is a first-class, high-quality experience in MVP.
 - **Single database everywhere** — Prisma + PostgreSQL for local, self-host, and Cloudflare deploy paths.
 - **Self-host friendly** — Docker Compose runs the full stack (app + PostgreSQL).
-- **Cloudflare optimized** — One-click deploy via OpenNext; database via Prisma Postgres + Accelerate.
+- **Cloudflare optimized** — One-click deploy via OpenNext; database via Prisma Postgres + Hyperdrive.
 - **Future-proof interfaces** — TypeScript interfaces defined early for agents, decisions, and market data.
 - **Single-tenant MVP** — No multi-user auth complexity until post-MVP.
 
@@ -62,7 +62,7 @@ PolyAgent OSS follows a **hybrid architecture** designed for rapid MVP delivery 
 | UI Components | Tailwind + shadcn/ui | Fast, accessible dashboards |
 | ORM | Prisma | Type-safe schema, migrations, single model across all deploy paths |
 | Database | PostgreSQL | Prisma Postgres (hosted) for Cloudflare; Docker PostgreSQL for local/self-host |
-| Edge DB Access | Prisma Accelerate | Connection pooling for Cloudflare Workers (serverless-safe) |
+| Edge DB Access | Cloudflare Hyperdrive | Connection pooling for Cloudflare Workers (serverless-safe) |
 | Deployment (primary) | Cloudflare Workers (OpenNext) | Edge performance, generous free tier |
 | Self-host | Docker Compose (app + PostgreSQL) | Complete local/VPS experience, no Cloudflare dependency |
 | Market Data Cache | Cloudflare KV (CF deploy) / in-memory (Docker) | Gamma API response caching; not a source of truth |
@@ -493,20 +493,18 @@ All persistent data — bots, positions, decisions, ticks — lives in PostgreSQ
 | Environment | Database | Connection |
 |-------------|----------|------------|
 | **Local dev** | Docker PostgreSQL (`docker compose up postgres`) | `DATABASE_URL=postgresql://polyagent:polyagent@localhost:5432/polyagent` |
-| **Cloudflare deploy** | Prisma Postgres (hosted) | `DATABASE_URL` via Prisma Accelerate connection string |
+| **Cloudflare deploy** | Prisma Postgres (hosted) | `HYPERDRIVE` binding (pooled); direct `postgresql://` for migrations |
 | **Self-host (VPS)** | PostgreSQL in Docker Compose | `DATABASE_URL=postgresql://polyagent:polyagent@postgres:5432/polyagent` |
 
-### 11.2 Prisma Accelerate (Cloudflare only)
+### 11.2 Cloudflare Hyperdrive (Cloudflare only)
 
-Cloudflare Workers cannot hold persistent TCP connections to PostgreSQL. Prisma Accelerate provides:
-- Connection pooling (required for serverless)
-- Global query caching (optional, useful for read-heavy market data joins)
+Cloudflare Workers cannot hold persistent TCP connections to PostgreSQL. Hyperdrive provides connection pooling at the edge.
 
 Setup:
-1. Create database on [Prisma Postgres](https://prisma.io/postgres).
-2. Enable Accelerate; copy `prisma://accelerate.prisma-data.net/...` connection string.
-3. Set as `DATABASE_URL` in Cloudflare Worker secrets.
-4. Local and Docker paths use direct `postgresql://` URL (no Accelerate).
+1. Provision a database on [Prisma Postgres](https://prisma.io/postgres) via `npx prisma postgres link` or [Prisma Console](https://console.prisma.io).
+2. Copy the direct `postgresql://...` connection string.
+3. Create a Hyperdrive config pointing at that URL; bind as `HYPERDRIVE` in `wrangler.jsonc`.
+4. Local and Docker paths use direct `postgresql://` URL (no Hyperdrive).
 
 ### 11.3 Migration Workflow
 
@@ -545,7 +543,7 @@ Web UI ↔ Next.js API routes ↔ Prisma ↔ PostgreSQL
 # One-time setup
 npm create cloudflare@latest polyagent-web -- --framework=next
 # Configure wrangler.jsonc: Cron trigger, Queue, KV binding
-# Set secrets: DATABASE_URL (Accelerate), optional KV
+# Set secrets: CRON_SECRET, DASHBOARD_PASSWORD, SESSION_SECRET; Hyperdrive binding for DB
 
 # Deploy
 pnpm deploy:cloudflare
@@ -556,7 +554,7 @@ Cron trigger: `*/5 * * * *` (every 5 minutes). Queue consumer bound to same Work
 ### 12.2 Docker Self-Host Path
 
 Docker runs the Next.js app as a **Node.js server** (not Workers runtime). This means:
-- Direct `postgresql://` connection to the Compose PostgreSQL container (no Accelerate).
+- Direct `postgresql://` connection to the Compose PostgreSQL container (no Hyperdrive).
 - `node-cron` scheduler runs in-process.
 - No Cloudflare KV; in-memory cache adapter used instead.
 
@@ -681,7 +679,7 @@ apps/web/lib/agents/RemotePythonAgent.ts  →  services/agent-service/
 | Question | Decision | Rationale |
 |----------|----------|-----------|
 | Database | Prisma + PostgreSQL everywhere | Portability across Cloudflare, Docker, and VPS; no D1 lock-in |
-| Cloudflare DB access | Prisma Accelerate | Serverless-safe connection pooling |
+| Cloudflare DB access | Cloudflare Hyperdrive | Serverless-safe connection pooling |
 | Auth | Single-tenant, no auth (MVP) | Removes scope; self-host trust boundary is sufficient |
 | MVP agent | ThresholdAgent only (rule-based) | No LLM cost/complexity; deterministic and testable |
 | Historical replay | Deferred to Phase 1.5 | Live paper trading is sufficient for demo/MVP |

@@ -7,7 +7,7 @@ Use this checklist before exposing a PolyAgent instance to the public internet.
 - [ ] Set `DASHBOARD_PASSWORD` to a strong, unique value
 - [ ] Set `SESSION_SECRET` to a separate random 32+ character string (do not reuse the dashboard password)
 - [ ] Set `CRON_SECRET` to a random 32+ character string
-- [ ] Use Prisma Accelerate or a connection pooler for Cloudflare deploys
+- [ ] Use Cloudflare Hyperdrive (or another connection pooler) for Cloudflare deploys
 - [ ] Run migrations with `pnpm db:migrate:deploy` before deploy
 
 ## Authentication
