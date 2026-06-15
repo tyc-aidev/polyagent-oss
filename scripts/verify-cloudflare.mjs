@@ -41,11 +41,9 @@ async function loginIfNeeded() {
 async function main() {
   console.log(`\nPolyAgent Cloudflare verification → ${BASE_URL}\n`);
 
-  await loginIfNeeded();
-
   logStep("Health + database");
   {
-    const { status, body } = await api("/api/health");
+    const { status, body } = await request(BASE_URL, "/api/health");
     assert(status === 200, `Health returned ${status}`);
     assert(body?.database === "connected", `Database not connected: ${JSON.stringify(body)}`);
   }
@@ -53,7 +51,7 @@ async function main() {
   if (PASSWORD) {
     logStep("Dashboard auth enforced");
     {
-      const { status } = await api("/api/bots");
+      const { status } = await request(BASE_URL, "/api/bots");
       assert(status === 401, `Expected 401 for unauthenticated /api/bots, got ${status}`);
     }
   }
@@ -85,6 +83,8 @@ async function main() {
       "Unexpected scheduler mode",
     );
   }
+
+  await loginIfNeeded();
 
   logStep("Markets endpoint (KV cache path)");
   {
