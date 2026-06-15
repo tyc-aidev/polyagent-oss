@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: polyagent
+      POSTGRES_PASSWORD: polyagent
+      POSTGRES_DB: polyagent
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U polyagent -d polyagent"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://polyagent:polyagent@postgres:5432/polyagent
+      GAMMA_API_BASE: https://gamma-api.polymarket.com
+      MARKET_CACHE_TTL_SECONDS: 60
+      SCHEDULER_MODE: docker
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
