@@ -2,6 +2,15 @@
 
 Thank you for your interest in contributing!
 
+## Testing
+
+- `pnpm test` — unit tests (fast, no database required)
+- `pnpm --filter @polyagent/web test:integration` — HTTP-level API tests (requires `DATABASE_URL` and migrated DB)
+- `pnpm smoke` — end-to-end Docker path (running server)
+- `pnpm smoke:cloudflare` — production Worker verification
+
+Integration tests run automatically in the CI smoke job after `pnpm db:setup`.
+
 ## Development setup
 
 ```bash

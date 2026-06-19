@@ -96,6 +96,12 @@ jobs:
         env:
           DATABASE_URL: postgresql://polyagent:polyagent@localhost:5432/polyagent
 
+      - name: API integration tests (HTTP-level)
+        run: pnpm --filter @polyagent/web test:integration
+        env:
+          DATABASE_URL: postgresql://polyagent:polyagent@localhost:5432/polyagent
+          CRON_SECRET: ci-smoke-test-secret
+
       - name: Build web app
         run: pnpm --filter @polyagent/web build
         env:

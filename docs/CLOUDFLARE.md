@@ -134,6 +134,8 @@ This runs `prisma migrate deploy` (applies only pending migrations) and `pnpm db
 | `ci.yml` | push/PR to `main` | lint, test, live Gamma check, Docker smoke with idempotent `db:setup` |
 | `deploy.yml` | `workflow_dispatch` or `v*` tag | migrate + seed → Cloudflare deploy → smoke verify |
 
+Full reference: [DEPLOY_SECRETS.md](./DEPLOY_SECRETS.md)
+
 **Required GitHub secrets for `deploy.yml`:**
 
 | Secret | Description |
