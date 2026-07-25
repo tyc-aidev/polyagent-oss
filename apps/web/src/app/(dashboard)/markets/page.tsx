@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { Card, CardTitle } from "@/components/ui/card";
-import { formatPrice } from "@/lib/format";
 import { listMarkets } from "@/lib/api/markets";
 import { MarketSearch } from "./market-search";
+import { MarketsTable } from "./markets-table";
 
 export default async function MarketsPage({
   searchParams,
@@ -16,47 +16,17 @@ export default async function MarketsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Market Explorer</h1>
-          <p className="text-zinc-400 text-sm mt-1">Live Polymarket data via Gamma API</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Market Explorer</h1>
+          <p className="mt-1 text-sm text-zinc-400">Live Polymarket data via Gamma API</p>
         </div>
         <MarketSearch initialQuery={q} />
       </div>
 
       <Card>
         <CardTitle>Active Markets ({markets.length})</CardTitle>
-        {markets.length === 0 ? (
-          <p className="text-zinc-400 text-sm">No markets found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-zinc-500 border-b border-zinc-800">
-                  <th className="pb-2 pr-4">Market</th>
-                  <th className="pb-2 pr-4">YES</th>
-                  <th className="pb-2 pr-4">NO</th>
-                  <th className="pb-2 pr-4">Volume 24h</th>
-                  <th className="pb-2">ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {markets.map((market) => (
-                  <tr key={market.id} className="border-b border-zinc-800/50">
-                    <td className="py-3 pr-4 max-w-md">
-                      <p className="font-medium">{market.question}</p>
-                      <p className="text-zinc-500 text-xs">{market.slug}</p>
-                    </td>
-                    <td className="py-3 pr-4 text-green-400">{formatPrice(market.yesPrice)}</td>
-                    <td className="py-3 pr-4 text-red-400">{formatPrice(market.noPrice)}</td>
-                    <td className="py-3 pr-4">${market.volume24h.toLocaleString()}</td>
-                    <td className="py-3 text-zinc-500 font-mono text-xs">{market.id}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <MarketsTable markets={markets} />
       </Card>
 
       <p className="text-xs text-zinc-500">
