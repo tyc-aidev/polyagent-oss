@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 # First-time Cloudflare resource setup for PolyAgent OSS.
-# Creates KV namespace and prints wrangler.jsonc snippets.
-#
-# Prerequisites: wrangler authenticated (`wrangler login`)
-#
-# Usage:
-#   ./scripts/setup-cloudflare.sh
+# Uses Prisma Accelerate (not Hyperdrive). Pattern: interactive-partners.
 set -euo pipefail
 
 cd "$(dirname "$0")/../apps/web"
@@ -19,7 +14,7 @@ if ! command -v wrangler >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "→ Creating MARKET_CACHE KV namespace (skip if already exists)..."
+echo "→ Creating MARKET_CACHE KV namespace..."
 KV_OUTPUT=$(npx wrangler kv namespace create MARKET_CACHE 2>&1) || true
 echo "$KV_OUTPUT"
 
@@ -28,29 +23,17 @@ if echo "$KV_OUTPUT" | grep -q 'id = '; then
   echo ""
   echo "Add to wrangler.jsonc kv_namespaces:"
   echo '  { "binding": "MARKET_CACHE", "id": "'"$KV_ID"'", "preview_id": "'"$KV_ID"'" }'
-else
-  echo "(Namespace may already exist — check wrangler.jsonc for MARKET_CACHE id)"
 fi
 
 echo ""
-echo "→ Hyperdrive (requires DATABASE_URL)..."
-if [[ -n "${DATABASE_URL:-}" ]]; then
-  npx wrangler hyperdrive create polyagent-db \
-    --connection-string "$DATABASE_URL" \
-    --binding HYPERDRIVE \
-    --update-config
-else
-  echo "Set DATABASE_URL and run:"
-  echo "  wrangler hyperdrive create polyagent-db \\"
-  echo "    --connection-string \"\$DATABASE_URL\" \\"
-  echo "    --binding HYPERDRIVE \\"
-  echo "    --update-config"
-fi
-
+echo "→ Worker secrets per environment (Prisma Accelerate — not Hyperdrive):"
+echo "  wrangler secret put DATABASE_URL --env staging"
+echo "  wrangler secret put DATABASE_URL --env production"
+echo "  wrangler secret put CRON_SECRET --env staging"
+echo "  wrangler secret put CRON_SECRET --env production"
+echo "  wrangler secret put DASHBOARD_PASSWORD --env production"
+echo "  wrangler secret put SESSION_SECRET --env production"
 echo ""
-echo "→ Worker secrets (run manually):"
-echo "  wrangler secret put CRON_SECRET"
-echo "  wrangler secret put DASHBOARD_PASSWORD"
-echo "  wrangler secret put SESSION_SECRET"
+echo "→ Local preview: copy .dev.vars.example → .dev.vars with Accelerate DATABASE_URL"
 echo ""
-echo "See docs/CLOUDFLARE.md for full deploy guide."
+echo "See docs/CLOUDFLARE.md and github.com/tyc-aidev/interactive-partners"

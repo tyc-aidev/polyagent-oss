@@ -1,10 +1,9 @@
 /**
- * For more details on how to configure Wrangler, refer to:
+ * PolyAgent Cloudflare Workers config (OpenNext).
  * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
+ *
+ * Secrets (not in this file): DATABASE_URL, CRON_SECRET, DASHBOARD_PASSWORD, SESSION_SECRET
+ * via `wrangler secret put <NAME> --env <staging|production>`.
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
@@ -13,7 +12,8 @@
 	"compatibility_date": "2026-06-11",
 	"compatibility_flags": [
 		"nodejs_compat",
-		"global_fetch_strictly_public"
+		"global_fetch_strictly_public",
+		"no_handle_cross_request_promise_resolution"
 	],
 	"vars": {
 		"SCHEDULER_MODE": "cloudflare"
@@ -66,12 +66,90 @@
 		"enabled": true
 	},
 	"upload_source_maps": true,
-	"hyperdrive": [
-		{
-			"binding": "HYPERDRIVE",
-			"id": "358f99bce03a4a09ad1546a7f03706a7"
+	// DATABASE_URL via `wrangler secret put DATABASE_URL --env <staging|production>`
+	// Prisma Accelerate URL — pattern: https://github.com/tyc-aidev/interactive-partners
+	"env": {
+		"staging": {
+			"name": "polyagent-web-staging",
+			"vars": {
+				"SCHEDULER_MODE": "cloudflare"
+			},
+			"images": {
+				"binding": "IMAGES"
+			},
+			"services": [
+				{
+					"binding": "WORKER_SELF_REFERENCE",
+					"service": "polyagent-web-staging"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MARKET_CACHE",
+					"id": "04d7695edeed4872a2fa7966eaaf42f3",
+					"preview_id": "04d7695edeed4872a2fa7966eaaf42f3"
+				}
+			],
+			"queues": {
+				"producers": [
+					{
+						"binding": "TICK_QUEUE",
+						"queue": "polyagent-ticks-staging"
+					}
+				],
+				"consumers": [
+					{
+						"queue": "polyagent-ticks-staging",
+						"max_batch_size": 5,
+						"max_batch_timeout": 30
+					}
+				]
+			},
+			"triggers": {
+				"crons": ["*/5 * * * *"]
+			}
+		},
+		"production": {
+			"name": "polyagent-web",
+			"vars": {
+				"SCHEDULER_MODE": "cloudflare"
+			},
+			"images": {
+				"binding": "IMAGES"
+			},
+			"services": [
+				{
+					"binding": "WORKER_SELF_REFERENCE",
+					"service": "polyagent-web"
+				}
+			],
+			"kv_namespaces": [
+				{
+					"binding": "MARKET_CACHE",
+					"id": "04d7695edeed4872a2fa7966eaaf42f3",
+					"preview_id": "04d7695edeed4872a2fa7966eaaf42f3"
+				}
+			],
+			"queues": {
+				"producers": [
+					{
+						"binding": "TICK_QUEUE",
+						"queue": "polyagent-ticks"
+					}
+				],
+				"consumers": [
+					{
+						"queue": "polyagent-ticks",
+						"max_batch_size": 5,
+						"max_batch_timeout": 30
+					}
+				]
+			},
+			"triggers": {
+				"crons": ["*/5 * * * *"]
+			}
 		}
-	]
+	}
 	/**
 	 * Smart Placement
 	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

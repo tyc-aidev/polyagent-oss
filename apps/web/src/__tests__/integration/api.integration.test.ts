@@ -14,6 +14,10 @@ import { POST as loginPost } from "@/app/api/auth/login/route";
 const DATABASE_URL = process.env.DATABASE_URL;
 const describeIfDb = DATABASE_URL ? describe : describe.skip;
 
+async function readJson<T>(response: Response): Promise<T> {
+  return response.json() as Promise<T>;
+}
+
 function jsonRequest(url: string, init: RequestInit = {}): Request {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("content-type")) {
@@ -46,7 +50,7 @@ describeIfDb("API integration (real database)", () => {
 
   it("GET /api/health returns connected database", async () => {
     const response = await healthGet();
-    const body = await response.json();
+    const body = await readJson<{ database: string }>(response);
     expect(response.status).toBe(200);
     expect(body.database).toBe("connected");
   });
@@ -59,7 +63,7 @@ describeIfDb("API integration (real database)", () => {
       }),
     );
     expect(response.status).toBe(400);
-    const body = await response.json();
+    const body = await readJson<{ code: string }>(response);
     expect(body.code).toBe("validation_error");
   });
 
@@ -74,7 +78,7 @@ describeIfDb("API integration (real database)", () => {
       }),
     );
     expect(response.status).toBe(201);
-    const body = await response.json();
+    const body = await readJson<{ id: string; status: string }>(response);
     expect(body.id).toBeTruthy();
     expect(body.status).toBe("paused");
     createdBotId = body.id;
@@ -83,7 +87,7 @@ describeIfDb("API integration (real database)", () => {
   it("GET /api/bots lists bots including created bot", async () => {
     const response = await botsGet();
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await readJson<{ bots: Array<{ id: string }> }>(response);
     expect(Array.isArray(body.bots)).toBe(true);
     if (createdBotId) {
       expect(body.bots.some((b: { id: string }) => b.id === createdBotId)).toBe(true);
@@ -96,7 +100,7 @@ describeIfDb("API integration (real database)", () => {
       params: Promise.resolve({ id: createdBotId }),
     });
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await readJson<{ id: string; portfolio: unknown }>(response);
     expect(body.id).toBe(createdBotId);
     expect(body.portfolio).toBeDefined();
   });
@@ -111,7 +115,7 @@ describeIfDb("API integration (real database)", () => {
       { params: Promise.resolve({ id: createdBotId }) },
     );
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await readJson<{ status: string }>(response);
     expect(body.status).toBe("active");
   });
 
@@ -136,7 +140,7 @@ describeIfDb("API integration (real database)", () => {
       }),
     );
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = await readJson<{ mode: string }>(response);
     expect(body.mode === "cloudflare-queue" || body.mode === "direct").toBe(true);
   });
 
@@ -151,7 +155,7 @@ describeIfDb("API integration (real database)", () => {
         }),
       );
       expect(response.status).toBe(200);
-      const body = await response.json();
+      const body = await readJson<{ ok: boolean }>(response);
       expect(body.ok).toBe(true);
     } finally {
       process.env.DASHBOARD_PASSWORD = previous;

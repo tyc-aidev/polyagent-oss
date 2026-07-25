@@ -2,11 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { isAuthorizedInternalRequest } from "./auth";
 
 function requestWithSecret(secret?: string): Request {
-  const headers = secret ? { "x-cron-secret": secret } : {};
-  return new Request("https://example.com/api/internal/cron", {
-    method: "POST",
-    headers,
-  });
+  const init: RequestInit = { method: "POST" };
+  if (secret) {
+    init.headers = { "x-cron-secret": secret };
+  }
+  return new Request("https://example.com/api/internal/cron", init);
 }
 
 describe("isAuthorizedInternalRequest", () => {

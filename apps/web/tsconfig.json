@@ -27,5 +27,6 @@
 		]
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
-	"exclude": ["node_modules"]
+	// worker-entry imports .open-next/worker.js which only exists after OpenNext build
+	"exclude": ["node_modules", "worker-entry.ts", ".open-next"]
 }

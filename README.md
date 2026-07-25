@@ -49,7 +49,7 @@ The web service runs at [http://localhost:3000](http://localhost:3000) with an i
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `DATABASE_URL` | — | PostgreSQL connection string |
+| `DATABASE_URL` | — | Postgres URL (direct or Prisma Accelerate on Workers) |
 | `GAMMA_API_BASE` | `https://gamma-api.polymarket.com` | Polymarket Gamma API base URL |
 | `MARKET_CACHE_TTL_SECONDS` | `60` | Gamma response cache TTL |
 | `SCHEDULER_MODE` | `docker` | `docker` (in-process) or `cloudflare` (Cron + Queue) |
@@ -95,7 +95,9 @@ SMOKE_BASE_URL=https://your-worker.workers.dev CRON_SECRET=... pnpm smoke:cloudf
 
 ## Cloudflare deploy
 
-See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) for Prisma Postgres + Hyperdrive setup, KV namespace creation, and CI migration workflow.
+See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) for Prisma Postgres + Accelerate setup (pattern from [interactive-partners](https://github.com/tyc-aidev/interactive-partners)).
+
+Local dev: `cd apps/web && ./scripts/setup-env.sh` → creates `.env.local` from `env.example`.
 
 ## Security
 

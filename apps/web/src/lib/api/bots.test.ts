@@ -12,9 +12,8 @@ const mockPrisma = {
   botTick: { findMany: vi.fn(), count: vi.fn() },
 };
 
-vi.mock("@polyagent/db", () => ({
-  prisma: mockPrisma,
-  Prisma: {},
+vi.mock("@/lib/db", () => ({
+  getPrismaAsync: vi.fn(async () => mockPrisma),
 }));
 
 const { archiveBot, createBot, getBot, listBots } = await import("./bots");

@@ -1,63 +1,105 @@
-# GitHub Actions Secrets & Environment Variables
+# GitHub Actions Secrets & Deployment Environments
 
-Reference for CI/CD and production deploy pipelines.
+Database access on Cloudflare Workers supports **Prisma Accelerate** *or* **direct Postgres** via the pg driver adapter. Hyperdrive is not used.
 
-## Workflows overview
+All runtimes read a single variable name: **`DATABASE_URL`**. The **value** depends on deployment environment (see table below).
 
-| Workflow | Secrets required | Notes |
-|----------|------------------|-------|
-| `ci.yml` | **None** | Uses ephemeral Postgres service; inline `DATABASE_URL` |
-| `deploy.yml` | **6 secrets** | Production migrate → deploy → verify |
+## Deployment environments
 
-## `deploy.yml` — required GitHub secrets
+| Environment | Worker name | Trigger | Local config file |
+|-------------|-------------|---------|-------------------|
+| **local** | — | `pnpm dev` | `apps/web/.env.local` |
+| **local-cf** | `polyagent-web-staging` (wrangler dev) | `pnpm dev:cf` | `apps/web/.dev.vars` |
+| **staging** | `polyagent-web-staging` | `deploy.yml` → `staging` | — |
+| **production** | `polyagent-web` | `deploy.yml` → `production` or tag `v*` | — |
 
-Configure at **Settings → Secrets and variables → Actions → Repository secrets**.
+### `DATABASE_URL` values by environment
 
-| Secret | Required | Used in | How to obtain |
-|--------|----------|---------|---------------|
-| `DATABASE_URL` | Yes | migrate job, deploy build | Prisma Postgres direct `postgresql://` URL from [Prisma Console](https://console.prisma.io) → Connect |
-| `CLOUDFLARE_API_TOKEN` | Yes | deploy job | [Cloudflare dashboard](https://dash.cloudflare.com/profile/api-tokens) → Create Token → **Edit Cloudflare Workers** template |
-| `CLOUDFLARE_ACCOUNT_ID` | Yes | deploy job | `wrangler whoami` → Account ID |
-| `SMOKE_BASE_URL` | Yes | verify job | Production Worker URL, e.g. `https://polyagent-web.<account>.workers.dev` |
-| `CRON_SECRET` | Yes | verify job | Same value as `wrangler secret put CRON_SECRET` (32+ random chars) |
-| `DASHBOARD_PASSWORD` | Yes* | verify job | Same value as `wrangler secret put DASHBOARD_PASSWORD` |
+| Environment | `DATABASE_URL` value | Where set |
+|-------------|---------------------|-----------|
+| **local** | `postgresql://polyagent:polyagent@localhost:5432/polyagent` | `apps/web/.env.local` |
+| **local-cf** | Accelerate `prisma+postgres://...` **or** direct `postgresql://...` | `apps/web/.dev.vars` |
+| **staging** (migrate) | Direct `postgresql://...` | GitHub Environment `staging` → **Variables** → `DATABASE_URL` |
+| **staging** (Worker) | Accelerate **or** direct `postgresql://...` | GitHub Environment `staging` → **Secrets** → `DATABASE_URL` |
+| **production** (migrate) | Direct `postgresql://...` | GitHub Environment `production` → **Variables** → `DATABASE_URL` |
+| **production** (Worker) | Accelerate **or** direct `postgresql://...` | GitHub Environment `production` → **Secrets** → `DATABASE_URL` |
 
-\*Required when dashboard auth is enabled on the Worker (recommended for public deploys).
+Migrations (`pnpm db:setup`) **always** require a direct `postgresql://` URL.  
+Worker runtime accepts Accelerate or direct Postgres (adapter path).  
+CI uses the same name (`DATABASE_URL`) in both cases — migrate reads `vars.DATABASE_URL`, deploy reads `secrets.DATABASE_URL`.
 
-### Deploy job environment variable (derived from secret)
+## Workflows
 
-| Variable | Source | Purpose |
-|----------|--------|---------|
-| `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE` | `${{ secrets.DATABASE_URL }}` | OpenNext build needs a Postgres URL to compile with Hyperdrive binding |
+| Workflow | Secrets required |
+|----------|------------------|
+| `ci.yml` | None (ephemeral Postgres) |
+| `deploy.yml` | Per-environment secrets + variables (see below) |
 
-## Cloudflare Worker secrets (not GitHub)
+## `deploy.yml` — GitHub Environments
 
-Set via `wrangler secret put` — **not** stored in the repo:
+Create two environments under **Settings → Environments**: `staging` and `production`.
 
-| Secret | Required | Purpose |
-|--------|----------|---------|
-| `CRON_SECRET` | Yes (production) | Protects `/api/internal/cron` and `/api/internal/queue` |
-| `DASHBOARD_PASSWORD` | Recommended | Password gate for public dashboard |
-| `SESSION_SECRET` | Recommended | HMAC signing for session cookies (separate from password) |
+Each environment needs:
 
-Database access uses the **Hyperdrive binding** (`HYPERDRIVE` in `wrangler.jsonc`), not a `DATABASE_URL` Worker secret.
+### Secrets (Settings → Environments → *env* → Environment secrets)
 
-## `ci.yml` — inline environment variables
+| Secret | Required | Used for |
+|--------|----------|----------|
+| `DATABASE_URL` | Yes | OpenNext build + `wrangler secret put DATABASE_URL` (runtime URL) |
+| `CLOUDFLARE_API_TOKEN` | Yes | `wrangler deploy` |
+| `CLOUDFLARE_ACCOUNT_ID` | Yes | `wrangler deploy` |
+| `SMOKE_BASE_URL` | Yes | Post-deploy smoke (`https://polyagent-web-staging.*` or `https://polyagent-web.*`) |
+| `CRON_SECRET` | Yes | Smoke + Worker secret sync |
+| `DASHBOARD_PASSWORD` | Yes* | Smoke auth + Worker secret |
+| `SESSION_SECRET` | Yes | Worker secret sync |
 
-No GitHub secrets needed. Jobs use:
+\*Required when dashboard auth is enabled.
 
-| Variable | Value | Job |
-|----------|-------|-----|
-| `DATABASE_URL` | `postgresql://polyagent:polyagent@localhost:5432/polyagent` | smoke |
-| `SCHEDULER_MODE` | `docker` | smoke |
-| `SMOKE_BASE_URL` | `http://localhost:3000` | smoke |
-| `CRON_SECRET` | `ci-smoke-test-secret` | smoke |
+### Variables (Settings → Environments → *env* → Environment variables)
 
-## Local / fork self-host
+| Variable | Required | Used for |
+|----------|----------|----------|
+| `DATABASE_URL` | Yes | `pnpm db:setup` migrate job (direct `postgresql://`) |
 
-Forks and local deploys only need:
+## CI/CD: Worker secret sync
 
-- `DATABASE_URL` for migrations and Docker Compose
-- Cloudflare secrets only if deploying to Workers
+`deploy.yml` pipes GitHub Environment secrets into Cloudflare Worker secrets before each deploy:
 
-See [CLOUDFLARE.md](./CLOUDFLARE.md) and [`.env.example`](../.env.example).
+```yaml
+echo "${{ secrets.DATABASE_URL }}" | wrangler secret put DATABASE_URL --env <staging|production>
+echo "${{ secrets.CRON_SECRET }}" | wrangler secret put CRON_SECRET --env <staging|production>
+# ... DASHBOARD_PASSWORD, SESSION_SECRET
+```
+
+Build step runs `apps/web/scripts/build-opennext.sh` (OpenNext + `pg-cloudflare` fix + module shim).
+
+## Cloudflare Worker secrets (manual / first-time)
+
+```bash
+cd apps/web
+npx wrangler secret put DATABASE_URL --env staging
+npx wrangler secret put CRON_SECRET --env staging
+npx wrangler secret put DATABASE_URL --env production
+npx wrangler secret put CRON_SECRET --env production
+npx wrangler secret put DASHBOARD_PASSWORD --env production
+npx wrangler secret put SESSION_SECRET --env production
+```
+
+No Hyperdrive binding. No `DATABASE_URL` in `wrangler.jsonc` vars (secret only).
+
+## Local files (not GitHub)
+
+| File | Purpose |
+|------|---------|
+| `apps/web/.env.local` | `next dev` — direct Docker Postgres |
+| `apps/web/.dev.vars` | Wrangler preview / `dev:cf` |
+| `packages/db/.env` | Prisma CLI (`postgres link`, local migrations) |
+
+Setup: `cd apps/web && ./scripts/setup-env.sh`
+
+## `ci.yml` — inline only
+
+| Variable | Value |
+|----------|-------|
+| `DATABASE_URL` | `postgresql://polyagent:polyagent@localhost:5432/polyagent` |
+| `CRON_SECRET` | `ci-smoke-test-secret` |
