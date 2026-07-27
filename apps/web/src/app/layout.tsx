@@ -13,8 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PolyAgent OSS",
-  description: "Open-source paper trading platform for prediction market agents",
+  title: {
+    default: "PolyAgent OSS",
+    template: "%s · PolyAgent OSS",
+  },
+  description:
+    "Open-source, self-hostable paper trading platform for prediction-market agents. Educational use only.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
