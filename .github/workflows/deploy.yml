@@ -2,14 +2,28 @@ name: Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment target
+        required: true
+        default: production
+        type: choice
+        options:
+          - staging
+          - production
   push:
     tags:
       - "v*"
 
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
 jobs:
   migrate:
-    name: Database migrate + seed
+    name: Database migrate + seed (${{ github.event.inputs.environment || 'production' }})
     runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -28,12 +42,15 @@ jobs:
       - name: Setup database (idempotent)
         run: pnpm db:setup
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Migrations require direct postgresql:// — stored as GitHub Environment *variable*
+          # DATABASE_URL (same name as Worker secret; different value for migrate vs runtime).
+          DATABASE_URL: ${{ vars.DATABASE_URL }}
 
   deploy:
-    name: Deploy to Cloudflare Workers
+    name: Deploy to Cloudflare Workers (${{ github.event.inputs.environment || 'production' }})
     runs-on: ubuntu-latest
     needs: migrate
+    environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,17 +66,44 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and deploy Worker
-        run: pnpm --filter @polyagent/web run deploy
+      # Full Prisma client + pg driver adapter on Workers (Accelerate may use generate:no-engine).
+      - name: Generate Prisma client
+        run: pnpm db:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Build OpenNext bundle (shim + pg-cloudflare fix)
+        working-directory: apps/web
+        run: chmod +x scripts/build-opennext.sh && ./scripts/build-opennext.sh
+        env:
+          WRANGLER_BUILD_PLATFORM: node
+          WRANGLER_BUILD_CONDITIONS: ""
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Sync Worker secrets
+        working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE: ${{ secrets.DATABASE_URL }}
+          DEPLOY_ENV: ${{ github.event.inputs.environment || 'production' }}
+        run: |
+          echo "${{ secrets.DATABASE_URL }}" | pnpm exec wrangler secret put DATABASE_URL --env "$DEPLOY_ENV"
+          echo "${{ secrets.CRON_SECRET }}" | pnpm exec wrangler secret put CRON_SECRET --env "$DEPLOY_ENV"
+          echo "${{ secrets.DASHBOARD_PASSWORD }}" | pnpm exec wrangler secret put DASHBOARD_PASSWORD --env "$DEPLOY_ENV"
+          echo "${{ secrets.SESSION_SECRET }}" | pnpm exec wrangler secret put SESSION_SECRET --env "$DEPLOY_ENV"
+
+      - name: Deploy Worker
+        working-directory: apps/web
+        run: pnpm exec wrangler deploy --env ${{ github.event.inputs.environment || 'production' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
   verify:
-    name: Post-deploy verification
+    name: Post-deploy verification (${{ github.event.inputs.environment || 'production' }})
     runs-on: ubuntu-latest
     needs: deploy
+    environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - uses: actions/checkout@v4
 

@@ -16,15 +16,24 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
 
-    const password = new FormData(event.currentTarget).get("password");
+    const password = String(new FormData(event.currentTarget).get("password") ?? "");
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
       body: JSON.stringify({ password }),
     });
 
     if (!response.ok) {
-      setError("Invalid password");
+      const payload = (await response.json().catch(() => null)) as {
+        code?: string;
+        error?: string;
+      } | null;
+      if (response.status === 429 || payload?.code === "rate_limited") {
+        setError("Too many login attempts — wait a minute and try again.");
+      } else {
+        setError(payload?.error ?? "Invalid password");
+      }
       setLoading(false);
       return;
     }

@@ -1,0 +1,14 @@
+# Wrangler local secrets (copy to .dev.vars — gitignored)
+# Deployment environment: LOCAL-CF (pnpm dev:cf / wrangler dev --env staging)
+#
+# DATABASE_URL: Prisma Accelerate (preferred) OR direct postgresql://
+# (Workers use Accelerate extension or the pg driver adapter automatically.)
+# Accelerate: Prisma Console → Connect → Accelerate
+# Direct: Prisma Console → Connect → Direct connection
+
+DATABASE_URL=prisma+postgres://accelerate.prisma-data.net/replace-me
+# DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/postgres?sslmode=require
+
+CRON_SECRET=local-dev-cron-secret
+DASHBOARD_PASSWORD=
+SESSION_SECRET=

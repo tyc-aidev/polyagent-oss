@@ -1,184 +1,151 @@
 # Cloudflare Deployment Guide
 
-PolyAgent deploys to Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare). PostgreSQL is accessed through [Cloudflare Hyperdrive](https://developers.cloudflare.com/hyperdrive/) (connection pooling for Workers). The origin database is [Prisma Postgres](https://www.prisma.io/postgres).
+PolyAgent deploys to Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare). Database access uses **Prisma Postgres** with either:
+
+1. **Direct `postgresql://`** + `@prisma/adapter-pg` (supported on Workers with `nodejs_compat`), or  
+2. **Prisma Accelerate** (`prisma://` / `prisma+postgres://`) via `@prisma/extension-accelerate`
+
+Hyperdrive is **not** used. Pattern aligned with [interactive-partners](https://github.com/tyc-aidev/interactive-partners).
 
 ## Prerequisites
 
 - Cloudflare account with Workers enabled
-- [Prisma Postgres](https://www.prisma.io/postgres) database (provisioned via Prisma CLI or [Prisma Console](https://console.prisma.io))
+- [Prisma Postgres](https://www.prisma.io/postgres) (or any Postgres) with a connection string
+- Optional: Accelerate enabled for connection pooling at the edge
 - `wrangler` CLI authenticated (`wrangler login`)
 
-## 1. Prisma Postgres + Hyperdrive
+## Deployment environments
 
-### Provision or link a database
+| Environment | Worker | Local config | `DATABASE_URL` value |
+|-------------|--------|--------------|---------------------|
+| **local** | — | `apps/web/.env.local` | Direct Docker `postgresql://...` |
+| **local-cf** | staging (wrangler dev) | `apps/web/.dev.vars` | Accelerate **or** direct `postgresql://` |
+| **staging** | `polyagent-web-staging` | GitHub Environment `staging` | Worker secret: runtime URL; migrate var: direct URL |
+| **production** | `polyagent-web` | GitHub Environment `production` | Worker secret: runtime URL; migrate var: direct URL |
 
-For an **existing** project like PolyAgent, link `packages/db` to your Prisma Postgres database:
+All environments use the **same variable name** (`DATABASE_URL`). See [DEPLOY_SECRETS.md](./DEPLOY_SECRETS.md).
+
+## Local environment files
+
+| File | Purpose |
+|------|---------|
+| `apps/web/.env.local` | `next dev` — copy from `apps/web/env.example` via `./scripts/setup-env.sh` |
+| `packages/db/.env` | Prisma CLI (`postgres link`, migrations) |
+| `apps/web/.dev.vars` | Wrangler preview / `dev:cf` — copy from `.dev.vars.example` |
+
+## 1. Database setup
+
+### Link / migrate (direct URL)
 
 ```bash
 cd packages/db
-npx prisma@7 postgres link
-```
-
-This opens the browser to authenticate on [Prisma Console](https://console.prisma.io), lets you pick a workspace/project/database, and writes a `DATABASE_URL` to `.env`.
-
-For a **new** greenfield project:
-
-```bash
-npx prisma@7 init --db
-```
-
-Alternatively, create a database in [Prisma Console](https://console.prisma.io) and copy the **direct** `postgresql://...` connection string.
-
-### Run migrations
-
-Use the direct PostgreSQL URL (not a pooled or edge URL) for migrations:
-
-```bash
-DATABASE_URL=postgresql://... pnpm db:migrate:deploy
-pnpm db:seed
-```
-
-### Create Hyperdrive
-
-Hyperdrive provides connection pooling for the Worker runtime. Point it at the same direct PostgreSQL URL:
-
-```bash
-cd apps/web
-wrangler hyperdrive create polyagent-db \
-  --connection-string "$DATABASE_URL" \
-  --binding HYPERDRIVE \
-  --update-config
-```
-
-To update an existing Hyperdrive config after rotating credentials:
-
-```bash
-wrangler hyperdrive update <hyperdrive-id> --connection-string "$DATABASE_URL"
-```
-
-The Worker reads `env.HYPERDRIVE.connectionString` at runtime (see `apps/web/src/lib/db.ts`). You do **not** need a `DATABASE_URL` Worker secret for production queries.
-
-### Local OpenNext builds
-
-Set the direct connection string in `apps/web/.dev.vars` (gitignored):
-
-```
-CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgresql://...
-```
-
-Local Docker dev uses a direct `postgresql://` URL without Hyperdrive.
-
-## 2. KV namespace (market cache)
-
-```bash
-cd apps/web
-npx wrangler kv namespace create MARKET_CACHE
-```
-
-Copy the returned namespace ID into `wrangler.jsonc`:
-
-```jsonc
-"kv_namespaces": [
-  { "binding": "MARKET_CACHE", "id": "<your-id>", "preview_id": "<your-id>" }
-]
-```
-
-## 3. Secrets
-
-```bash
-cd apps/web
-npx wrangler secret put CRON_SECRET       # random 32+ char string
-npx wrangler secret put DASHBOARD_PASSWORD  # if exposing publicly
-npx wrangler secret put SESSION_SECRET    # separate from password (recommended)
-```
-
-`CRON_SECRET` protects `/api/internal/cron` and `/api/internal/queue`. The Cron trigger and Queue consumer call these routes via the `WORKER_SELF_REFERENCE` service binding.
-
-## 4. Wrangler bindings
-
-`apps/web/wrangler.jsonc` configures:
-
-| Binding | Purpose |
-|---------|---------|
-| `HYPERDRIVE` | Pooled PostgreSQL connection for Prisma |
-| `MARKET_CACHE` (KV) | Gamma API response cache |
-| `TICK_QUEUE` (Queue) | Per-bot tick jobs |
-| Cron `*/5 * * * *` | Enqueue active bots every 5 minutes |
-| `SCHEDULER_MODE=cloudflare` | Use queue-based scheduling |
-
-Queues are created automatically on first deploy.
-
-## 5. Build and deploy
-
-```bash
-pnpm install
-pnpm db:migrate:deploy   # against production DB
-cd apps/web
-pnpm run deploy          # opennextjs-cloudflare build && deploy
-```
-
-## 6. CI/CD database + deploy workflow
-
-Use the idempotent setup script before every deploy (safe to re-run):
-
-```bash
+npx prisma postgres link   # optional Prisma Postgres
+# or set DATABASE_URL=postgresql://... in packages/db/.env
+cd ../..
 DATABASE_URL=postgresql://... pnpm db:setup
 ```
 
-This runs `prisma migrate deploy` (applies only pending migrations) and `pnpm db:seed` (skips if the demo bot already exists).
+### Worker runtime URL
 
-### GitHub Actions
+```bash
+cd apps/web
+# Either Accelerate:
+npx wrangler secret put DATABASE_URL --env production   # prisma+postgres://...
+# Or direct (pg adapter on Workers):
+npx wrangler secret put DATABASE_URL --env production   # postgresql://...
+
+npx wrangler secret put CRON_SECRET --env production
+npx wrangler secret put DASHBOARD_PASSWORD --env production
+npx wrangler secret put SESSION_SECRET --env production
+```
+
+Runtime selection is automatic in `apps/web/src/lib/db-factory.ts`:
+
+| URL | Client path |
+|-----|-------------|
+| `prisma://` / `prisma+postgres://` | Edge client + Accelerate extension |
+| `postgresql://` on Workers | PrismaClient + `@prisma/adapter-pg` + `pg` |
+| `postgresql://` on Node | Shared Node `PrismaClient` singleton |
+
+## 2. OpenNext edge fixes
+
+Deploy avoids Worker hangs / bundle failures with:
+
+1. **Per-request Prisma client** on Workers (`getPrismaAsync()` — never reuse across requests)
+2. **Full `prisma generate`** for the pg adapter path (use `pnpm db:generate:no-engine` only with Accelerate-only builds)
+3. **Module shim** injected into `.open-next/worker.js` after build
+4. **`pg-cloudflare` dist restore** during OpenNext esbuild (OpenNext may copy only `empty.js`)
+5. Wrangler flag: `no_handle_cross_request_promise_resolution`
+
+Local and CI use `apps/web/scripts/build-opennext.sh` (build → fix → shim).
+
+## 3. KV namespace (market cache)
+
+```bash
+./scripts/setup-cloudflare.sh
+# or: cd apps/web && npx wrangler kv namespace create MARKET_CACHE
+```
+
+Update `wrangler.jsonc` `kv_namespaces` IDs if you create a new namespace.
+
+## 4. Queues
+
+Staging and production use separate queues:
+
+| Env | Queue name |
+|-----|------------|
+| production | `polyagent-ticks` |
+| staging | `polyagent-ticks-staging` |
+
+Create if missing:
+
+```bash
+cd apps/web
+npx wrangler queues create polyagent-ticks
+npx wrangler queues create polyagent-ticks-staging
+```
+
+## 5. Build and deploy (manual)
+
+```bash
+pnpm install
+DATABASE_URL=postgresql://... pnpm db:setup
+pnpm db:generate
+cd apps/web
+pnpm run deploy            # production
+# pnpm run deploy:staging  # staging
+```
+
+## 6. CI/CD
+
+See [DEPLOY_SECRETS.md](./DEPLOY_SECRETS.md) for GitHub Environments (`staging`, `production`).
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `ci.yml` | push/PR to `main` | lint, test, live Gamma check, Docker smoke with idempotent `db:setup` |
-| `deploy.yml` | `workflow_dispatch` or `v*` tag | migrate + seed → Cloudflare deploy → smoke verify |
+| `ci.yml` | push/PR | lint, test, Gamma check, Docker smoke |
+| `deploy.yml` | tag / manual | migrate → generate → OpenNext build → **sync secrets** → deploy → smoke |
 
-Full reference: [DEPLOY_SECRETS.md](./DEPLOY_SECRETS.md)
-
-**Required GitHub secrets for `deploy.yml`:**
-
-| Secret | Description |
-|--------|-------------|
-| `DATABASE_URL` | Direct Prisma Postgres `postgresql://` URL (migrations + Hyperdrive local build string) |
-| `CLOUDFLARE_API_TOKEN` | Wrangler deploy token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
-| `SMOKE_BASE_URL` | Deployed Worker URL (e.g. `https://polyagent-web.<account>.workers.dev`) |
-| `CRON_SECRET` | Worker cron secret (for post-deploy smoke) |
-| `DASHBOARD_PASSWORD` | Dashboard password (for post-deploy smoke) |
-
-Recommended manual deploy order:
-
-1. `DATABASE_URL=... pnpm db:setup`
-2. `cd apps/web && pnpm run deploy`
-3. `pnpm smoke:cloudflare`
+Manual dispatch chooses `staging` or `production`; tags deploy to `production`.
 
 ## 7. Verify deployment
 
-Run the automated verification script:
-
 ```bash
 SMOKE_BASE_URL=https://<your-worker>.workers.dev \
-CRON_SECRET=<your-secret> \
-DASHBOARD_PASSWORD=<if-set> \
+CRON_SECRET=<secret> \
+DASHBOARD_PASSWORD=<password> \
 pnpm smoke:cloudflare
 ```
-
-This checks health, cron auth, markets (KV cache), security headers, and the seeded demo bot.
-
-For live scheduler activity:
-
-```bash
-npx wrangler tail
-```
-
-Wait for a Cron trigger (every 5 minutes). You should see enqueue activity and tick results in the bot detail UI.
 
 ## 8. Local Cloudflare preview
 
 ```bash
 cd apps/web
-pnpm run preview
+cp .dev.vars.example .dev.vars   # set DATABASE_URL + CRON_SECRET
+pnpm run dev:cf
 ```
 
-Uses local simulation for KV and Queues. Set `SCHEDULER_MODE=cloudflare` in `.dev.vars` to test the enqueue path.
+## 9. Scheduler
+
+- Cron: `*/5 * * * *` → `POST /api/internal/cron` (enqueues active bot IDs)
+- Queue consumer: `polyagent-ticks` → `POST /api/internal/queue` per bot
+- Both require `CRON_SECRET` (`x-cron-secret` header)
