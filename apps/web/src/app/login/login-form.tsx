@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
 
 export function LoginForm() {
@@ -43,17 +44,27 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="w-full max-w-sm space-y-4">
-      <h1 className="text-xl font-semibold">PolyAgent OSS</h1>
-      <p className="text-sm text-zinc-400">Enter dashboard password to continue.</p>
-      <div>
-        <Label>Password</Label>
-        <Input name="password" type="password" required autoComplete="current-password" />
-      </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Signing in..." : "Sign In"}
-      </Button>
-    </form>
+    <Card className="w-full max-w-sm p-6">
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div>
+          <CardTitle className="mb-1">PolyAgent OSS</CardTitle>
+          <CardDescription>Enter dashboard password to continue.</CardDescription>
+        </div>
+        <div>
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+          />
+        </div>
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "Signing in..." : "Sign In"}
+        </Button>
+      </form>
+    </Card>
   );
 }

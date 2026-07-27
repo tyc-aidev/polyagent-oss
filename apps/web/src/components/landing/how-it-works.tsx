@@ -14,13 +14,13 @@ export function LandingHowItWorks() {
         {steps.map((item) => (
           <li
             key={item.step}
-            className="relative rounded-xl border border-zinc-800 bg-zinc-900/40 p-6"
+            className="relative rounded-xl border border-border bg-card p-6 shadow-sm"
           >
-            <span className="mb-4 inline-flex size-9 items-center justify-center rounded-full bg-teal-600/20 text-sm font-semibold text-teal-300 ring-1 ring-teal-500/30">
+            <span className="mb-4 inline-flex size-9 items-center justify-center rounded-full bg-primary-muted text-sm font-semibold text-primary ring-1 ring-primary/30">
               {item.step}
             </span>
-            <h3 className="text-lg font-semibold text-zinc-50">{item.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-zinc-400">{item.description}</p>
+            <h3 className="text-lg font-semibold text-foreground">{item.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
           </li>
         ))}
       </ol>

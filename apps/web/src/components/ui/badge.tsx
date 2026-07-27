@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
 
 const styles = {
-  active: "bg-green-500/20 text-green-300 border-green-500/30",
-  paused: "bg-amber-500/20 text-amber-200 border-amber-500/30",
-  archived: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30",
-  failed: "bg-red-500/20 text-red-300 border-red-500/30",
-  completed: "bg-green-500/20 text-green-300 border-green-500/30",
-  running: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  pending: "bg-zinc-500/20 text-zinc-300 border-zinc-500/30",
+  active: "bg-success-muted text-success-foreground border-success/30",
+  paused: "bg-warning-muted text-warning-foreground border-warning/30",
+  archived: "bg-muted text-muted-foreground border-border",
+  failed: "bg-destructive/15 text-destructive border-destructive/30",
+  completed: "bg-success-muted text-success-foreground border-success/30",
+  running: "bg-info-muted text-info-foreground border-info/30",
+  pending: "bg-muted text-muted-foreground border-border",
 };
 
 export function Badge({

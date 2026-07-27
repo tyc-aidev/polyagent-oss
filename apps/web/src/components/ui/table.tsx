@@ -4,28 +4,26 @@ import { cn } from "@/lib/utils";
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   return (
     <div className="relative w-full overflow-x-auto">
-      <table
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+      <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );
 }
 
 export function TableHeader({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("[&_tr]:border-b", className)} {...props} />;
+  return <thead className={cn("[&_tr]:border-b border-border", className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return (
-    <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />
-  );
+  return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />;
 }
 
 export function TableFooter({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <tfoot
-      className={cn("border-t border-zinc-800 bg-zinc-900/50 font-medium [&>tr]:last:border-b-0", className)}
+      className={cn(
+        "border-t border-border bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        className,
+      )}
       {...props}
     />
   );
@@ -35,7 +33,7 @@ export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowEle
   return (
     <tr
       className={cn(
-        "border-b border-zinc-800/50 transition-colors hover:bg-zinc-900/60 data-[state=selected]:bg-zinc-900",
+        "border-b border-border/60 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
         className,
       )}
       {...props}
@@ -47,7 +45,7 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
   return (
     <th
       className={cn(
-        "h-10 px-2 text-left align-middle text-xs font-medium uppercase tracking-wide text-zinc-500 [&:has([role=checkbox])]:pr-0",
+        "h-10 px-2 text-left align-middle text-xs font-medium uppercase tracking-wide text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -57,15 +55,10 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
 
 export function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td
-      className={cn("p-2 align-middle [&:has([role=checkbox])]:pr-0", className)}
-      {...props}
-    />
+    <td className={cn("p-2 align-middle text-foreground [&:has([role=checkbox])]:pr-0", className)} {...props} />
   );
 }
 
 export function TableCaption({ className, ...props }: HTMLAttributes<HTMLTableCaptionElement>) {
-  return (
-    <caption className={cn("mt-4 text-sm text-zinc-500", className)} {...props} />
-  );
+  return <caption className={cn("mt-4 text-sm text-muted-foreground", className)} {...props} />;
 }

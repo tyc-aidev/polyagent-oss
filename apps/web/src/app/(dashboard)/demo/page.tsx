@@ -21,14 +21,14 @@ export default async function DemoPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-semibold">Demo Walkthrough</h1>
-        <p className="text-zinc-400 text-sm mt-1">
+        <p className="text-muted-foreground text-sm mt-1">
           Try paper trading in under 5 minutes.
         </p>
       </div>
 
       <Card>
         <CardTitle>How it works</CardTitle>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-300">
+        <ol className="list-decimal list-inside space-y-2 text-sm text-foreground/80">
           <li>Browse live markets on the Market Explorer</li>
           <li>Review the pre-seeded demo bot (or create your own)</li>
           <li>Run a tick to analyze markets and simulate trades</li>
@@ -38,9 +38,9 @@ export default async function DemoPage() {
 
       {!demoBot ? (
         <Card>
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-muted-foreground">
             Demo bot not found. Run{" "}
-            <code className="text-teal-400">pnpm db:seed</code> after starting Postgres.
+            <code className="text-primary">pnpm db:seed</code> after starting Postgres.
           </p>
           <Link href="/bots/new" className="inline-block mt-4">
             <Button variant="secondary">Create a Bot Instead</Button>
@@ -51,7 +51,7 @@ export default async function DemoPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-lg">{demoBot.name}</p>
-              <p className="text-xs text-zinc-500 font-mono mt-1">{demoBot.id}</p>
+              <p className="text-xs text-muted-foreground font-mono mt-1">{demoBot.id}</p>
             </div>
             <BotStatusBadge status={demoBot.status} />
           </div>
@@ -77,7 +77,7 @@ export default async function DemoPage() {
             return (
               <p className="text-sm">
                 P&L:{" "}
-                <span className={summary.totalPnl >= 0 ? "text-green-400" : "text-red-400"}>
+                <span className={summary.totalPnl >= 0 ? "text-success" : "text-destructive"}>
                   {formatUsd(summary.totalPnl)}
                 </span>
                 {" · "}

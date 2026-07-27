@@ -19,7 +19,7 @@ export default async function MarketsPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Market Explorer</h1>
-          <p className="mt-1 text-sm text-zinc-400">Live Polymarket data via Gamma API</p>
+          <p className="mt-1 text-sm text-muted-foreground">Live Polymarket data via Gamma API</p>
         </div>
         <MarketSearch initialQuery={q} />
       </div>
@@ -29,9 +29,9 @@ export default async function MarketsPage({
         <MarketsTable markets={markets} />
       </Card>
 
-      <p className="text-xs text-zinc-500">
+      <p className="text-xs text-muted-foreground">
         Copy a market ID when{" "}
-        <Link href="/bots/new" className="text-teal-400 hover:underline">
+        <Link href="/bots/new" className="text-primary hover:underline">
           creating a bot
         </Link>
         .

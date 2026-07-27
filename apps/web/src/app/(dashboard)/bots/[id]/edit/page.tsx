@@ -23,7 +23,7 @@ export default async function EditBotPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Edit Bot</h1>
-        <p className="text-zinc-400 text-sm mt-1">{bot.name}</p>
+        <p className="text-muted-foreground text-sm mt-1">{bot.name}</p>
       </div>
       <Card>
         <CardTitle>Configuration</CardTitle>

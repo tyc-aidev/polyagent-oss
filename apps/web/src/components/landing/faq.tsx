@@ -9,16 +9,18 @@ export function LandingFaq() {
         title="Questions and answers"
         description="Straight answers about paper trading, data, and deployment."
       />
-      <div className="divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/40">
+      <div className="divide-y divide-border rounded-xl border border-border bg-card shadow-sm">
         {faqs.map((item) => (
           <details key={item.question} className="group px-5 py-1">
-            <summary className="cursor-pointer list-none py-4 text-sm font-medium text-zinc-100 marker:content-none [&::-webkit-details-marker]:hidden">
+            <summary className="cursor-pointer list-none py-4 text-sm font-medium text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
               <span className="flex items-center justify-between gap-4">
                 {item.question}
-                <span className="text-zinc-500 transition-transform group-open:rotate-45">+</span>
+                <span className="text-muted-foreground transition-transform group-open:rotate-45">
+                  +
+                </span>
               </span>
             </summary>
-            <p className="pb-4 text-sm leading-relaxed text-zinc-400">{item.answer}</p>
+            <p className="pb-4 text-sm leading-relaxed text-muted-foreground">{item.answer}</p>
           </details>
         ))}
       </div>
