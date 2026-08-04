@@ -25,13 +25,15 @@ export function LandingFeatures() {
           return (
             <article
               key={feature.title}
-              className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 transition-colors hover:border-zinc-700 hover:bg-zinc-900/70"
+              className="rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30 hover:bg-card"
             >
-              <div className="mb-3 inline-flex rounded-lg border border-zinc-800 bg-zinc-950 p-2 text-teal-400">
+              <div className="mb-3 inline-flex rounded-lg border border-border bg-primary-muted p-2 text-primary">
                 <Icon className="size-5" aria-hidden />
               </div>
-              <h3 className="text-base font-semibold text-zinc-50">{feature.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{feature.description}</p>
+              <h3 className="text-base font-semibold text-foreground">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {feature.description}
+              </p>
             </article>
           );
         })}

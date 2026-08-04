@@ -158,7 +158,7 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
           <select
             name="status"
             defaultValue={initial?.status ?? "paused"}
-            className="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
           >
             <option value="paused">paused</option>
             <option value="active">active</option>
@@ -166,7 +166,7 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
           </select>
         </div>
       )}
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={loading}>
         {loading ? "Saving..." : mode === "create" ? "Create Bot" : "Save Changes"}
       </Button>

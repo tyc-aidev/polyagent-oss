@@ -38,7 +38,7 @@ export function RunTickButton({ botId }: { botId: string }) {
       <Button onClick={runTick} disabled={loading}>
         {loading ? "Running..." : "Run Tick"}
       </Button>
-      {message && <p className="text-sm text-zinc-400">{message}</p>}
+      {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   );
 }

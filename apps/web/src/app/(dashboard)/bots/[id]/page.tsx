@@ -42,7 +42,7 @@ export default async function BotDetailPage({
             <h1 className="text-2xl font-semibold">{bot.name}</h1>
             <BotStatusBadge status={bot.status} />
           </div>
-          <p className="text-zinc-500 text-sm mt-1 font-mono">{bot.id}</p>
+          <p className="text-muted-foreground text-sm mt-1 font-mono">{bot.id}</p>
         </div>
         <div className="flex gap-2">
           <Link href={`/bots/${id}/edit`}>
@@ -54,25 +54,25 @@ export default async function BotDetailPage({
 
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <p className="text-xs text-zinc-500">Cash Balance</p>
+          <p className="text-xs text-muted-foreground">Cash Balance</p>
           <p className="text-xl font-semibold mt-1">
             ${bot.portfolio.cashBalance.toLocaleString()}
           </p>
         </Card>
         <Card>
-          <p className="text-xs text-zinc-500">Total P&L</p>
+          <p className="text-xs text-muted-foreground">Total P&L</p>
           <p
-            className={`text-xl font-semibold mt-1 ${bot.portfolio.totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+            className={`text-xl font-semibold mt-1 ${bot.portfolio.totalPnl >= 0 ? "text-success" : "text-destructive"}`}
           >
             {formatUsd(bot.portfolio.totalPnl)}
           </p>
         </Card>
         <Card>
-          <p className="text-xs text-zinc-500">Open Positions</p>
+          <p className="text-xs text-muted-foreground">Open Positions</p>
           <p className="text-xl font-semibold mt-1">{bot.portfolio.openPositions}</p>
         </Card>
         <Card>
-          <p className="text-xs text-zinc-500">Markets</p>
+          <p className="text-xs text-muted-foreground">Markets</p>
           <p className="text-xl font-semibold mt-1">{bot.config.markets.length}</p>
         </Card>
       </div>
@@ -81,18 +81,18 @@ export default async function BotDetailPage({
         <Card>
           <CardTitle>Open Positions</CardTitle>
           {positions.length === 0 ? (
-            <p className="text-sm text-zinc-400">No open positions.</p>
+            <p className="text-sm text-muted-foreground">No open positions.</p>
           ) : (
             <div className="space-y-2">
               {positions.map((position) => (
                 <div
                   key={position.id}
-                  className="rounded border border-zinc-800 px-3 py-2 text-sm"
+                  className="rounded border border-border px-3 py-2 text-sm"
                 >
                   <p className="font-medium">
                     {position.side} · {position.marketId}
                   </p>
-                  <p className="text-zinc-400">
+                  <p className="text-muted-foreground">
                     {position.size.toFixed(2)} shares @ {formatPrice(position.avgPrice)} ·{" "}
                     {formatUsd(position.unrealizedPnl)} unrealized
                   </p>
@@ -105,16 +105,16 @@ export default async function BotDetailPage({
         <Card>
           <CardTitle>Recent Ticks</CardTitle>
           {ticks.items.length === 0 ? (
-            <p className="text-sm text-zinc-400">No ticks yet. Run a tick to start.</p>
+            <p className="text-sm text-muted-foreground">No ticks yet. Run a tick to start.</p>
           ) : (
             <div className="space-y-2">
               {ticks.items.map((tick) => (
                 <div
                   key={tick.id}
-                  className="flex items-center justify-between rounded border border-zinc-800 px-3 py-2 text-sm"
+                  className="flex items-center justify-between rounded border border-border px-3 py-2 text-sm"
                 >
                   <span>{formatDate(tick.startedAt)}</span>
-                  <span className="text-xs capitalize text-zinc-400">{tick.status}</span>
+                  <span className="text-xs capitalize text-muted-foreground">{tick.status}</span>
                 </div>
               ))}
             </div>
@@ -125,17 +125,17 @@ export default async function BotDetailPage({
       <Card>
         <CardTitle>Decision Log</CardTitle>
         {decisions.items.length === 0 ? (
-          <p className="text-sm text-zinc-400">No decisions yet.</p>
+          <p className="text-sm text-muted-foreground">No decisions yet.</p>
         ) : (
           <div className="space-y-3">
             {decisions.items.map((decision) => (
-              <div key={decision.id} className="rounded border border-zinc-800 px-3 py-2 text-sm">
+              <div key={decision.id} className="rounded border border-border px-3 py-2 text-sm">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{decision.action}</span>
-                  <span className="text-zinc-500">{formatDate(decision.createdAt)}</span>
+                  <span className="text-muted-foreground">{formatDate(decision.createdAt)}</span>
                 </div>
-                <p className="text-zinc-400 mt-1">{decision.reasoning}</p>
-                <p className="text-zinc-500 text-xs mt-1">
+                <p className="text-muted-foreground mt-1">{decision.reasoning}</p>
+                <p className="text-muted-foreground text-xs mt-1">
                   Market {decision.marketId} · confidence {(decision.confidence * 100).toFixed(0)}%
                 </p>
               </div>

@@ -43,9 +43,9 @@ function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
     return <ArrowUpDown className="size-3.5 opacity-50" aria-hidden />;
   }
   return dir === "asc" ? (
-    <ArrowUp className="size-3.5 text-teal-400" aria-hidden />
+    <ArrowUp className="size-3.5 text-primary" aria-hidden />
   ) : (
-    <ArrowDown className="size-3.5 text-teal-400" aria-hidden />
+    <ArrowDown className="size-3.5 text-primary" aria-hidden />
   );
 }
 
@@ -63,18 +63,17 @@ export function MarketsTable({ markets }: { markets: MarketSnapshot[] }) {
       return;
     }
     setSortKey(key);
-    // Default: text ascending, numbers descending
     setSortDir(key === "question" || key === "id" ? "asc" : "desc");
   }
 
   if (markets.length === 0) {
-    return <p className="text-sm text-zinc-400">No markets found.</p>;
+    return <p className="text-sm text-muted-foreground">No markets found.</p>;
   }
 
   return (
     <Table>
       <TableHeader>
-        <TableRow className="hover:bg-transparent border-zinc-800">
+        <TableRow className="hover:bg-transparent">
           {columns.map((col) => {
             const active = sortKey === col.key;
             return (
@@ -93,7 +92,7 @@ export function MarketsTable({ markets }: { markets: MarketSnapshot[] }) {
                   className={cn(
                     "h-8 gap-1.5 px-2 font-medium uppercase tracking-wide",
                     col.align === "right" && "ml-auto",
-                    active ? "text-zinc-100" : "text-zinc-500",
+                    active ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
                   {col.label}
@@ -108,19 +107,21 @@ export function MarketsTable({ markets }: { markets: MarketSnapshot[] }) {
         {sorted.map((market) => (
           <TableRow key={market.id}>
             <TableCell className="max-w-md py-3">
-              <p className="font-medium text-zinc-100">{market.question}</p>
-              <p className="text-xs text-zinc-500">{market.slug}</p>
+              <p className="font-medium text-foreground">{market.question}</p>
+              <p className="text-xs text-muted-foreground">{market.slug}</p>
             </TableCell>
-            <TableCell className="py-3 text-right tabular-nums text-green-400">
+            <TableCell className="py-3 text-right tabular-nums text-success">
               {formatPrice(market.yesPrice)}
             </TableCell>
-            <TableCell className="py-3 text-right tabular-nums text-red-400">
+            <TableCell className="py-3 text-right tabular-nums text-destructive">
               {formatPrice(market.noPrice)}
             </TableCell>
-            <TableCell className="py-3 text-right tabular-nums text-zinc-200">
+            <TableCell className="py-3 text-right tabular-nums text-foreground">
               ${market.volume24h.toLocaleString()}
             </TableCell>
-            <TableCell className="py-3 font-mono text-xs text-zinc-500">{market.id}</TableCell>
+            <TableCell className="py-3 font-mono text-xs text-muted-foreground">
+              {market.id}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
