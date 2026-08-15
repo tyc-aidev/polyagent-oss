@@ -40,11 +40,15 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Setup database (idempotent)
-        run: pnpm db:setup
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL_POSTGRES is empty — set it on the GitHub Environment as a secret (direct postgresql:// URL)."
+            exit 1
+          fi
+          pnpm db:setup
         env:
-          # Migrations require direct postgresql:// — stored as GitHub Environment *variable*
-          # DATABASE_URL (same name as Worker secret; different value for migrate vs runtime).
-          DATABASE_URL: ${{ vars.DATABASE_URL }}
+          # Direct Postgres for Prisma migrate/seed (not the Worker runtime URL).
+          DATABASE_URL: ${{ secrets.DATABASE_URL_POSTGRES }}
 
   deploy:
     name: Deploy to Cloudflare Workers (${{ github.event.inputs.environment || 'production' }})
@@ -80,17 +84,32 @@ jobs:
           WRANGLER_BUILD_CONDITIONS: ""
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Sync Worker secrets
+      - name: Sync Worker secrets from GitHub
         working-directory: apps/web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_ENV: ${{ github.event.inputs.environment || 'production' }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
         run: |
-          echo "${{ secrets.DATABASE_URL }}" | pnpm exec wrangler secret put DATABASE_URL --env "$DEPLOY_ENV"
-          echo "${{ secrets.CRON_SECRET }}" | pnpm exec wrangler secret put CRON_SECRET --env "$DEPLOY_ENV"
-          echo "${{ secrets.DASHBOARD_PASSWORD }}" | pnpm exec wrangler secret put DASHBOARD_PASSWORD --env "$DEPLOY_ENV"
-          echo "${{ secrets.SESSION_SECRET }}" | pnpm exec wrangler secret put SESSION_SECRET --env "$DEPLOY_ENV"
+          set -euo pipefail
+          missing=0
+          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID DATABASE_URL CRON_SECRET DASHBOARD_PASSWORD SESSION_SECRET; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required secret: $name (repo-level or Environment $DEPLOY_ENV)."
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          printf '%s' "$DATABASE_URL" | pnpm exec wrangler secret put DATABASE_URL --env "$DEPLOY_ENV"
+          printf '%s' "$CRON_SECRET" | pnpm exec wrangler secret put CRON_SECRET --env "$DEPLOY_ENV"
+          printf '%s' "$DASHBOARD_PASSWORD" | pnpm exec wrangler secret put DASHBOARD_PASSWORD --env "$DEPLOY_ENV"
+          printf '%s' "$SESSION_SECRET" | pnpm exec wrangler secret put SESSION_SECRET --env "$DEPLOY_ENV"
 
       - name: Deploy Worker
         working-directory: apps/web
@@ -123,8 +142,13 @@ jobs:
         run: pnpm verify:gamma
 
       - name: Cloudflare smoke test
-        run: pnpm smoke:cloudflare
+        run: |
+          if [ -z "$SMOKE_BASE_URL" ]; then
+            echo "SMOKE_BASE_URL is empty — set Environment variable SMOKE_BASE_URL."
+            exit 1
+          fi
+          pnpm smoke:cloudflare
         env:
-          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL || secrets.SMOKE_BASE_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           DASHBOARD_PASSWORD: ${{ secrets.DASHBOARD_PASSWORD }}
