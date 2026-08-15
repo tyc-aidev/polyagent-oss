@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (!checkRateLimit(request, "auth:login", 10, 60_000)) {
+  if (!(await checkRateLimit(request, "auth:login", 10, 60_000))) {
     return apiError("Too many login attempts", "rate_limited", 429);
   }
 

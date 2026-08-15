@@ -17,6 +17,7 @@
     "verify:gamma": "node scripts/verify-gamma.mjs",
     "smoke": "node scripts/smoke-docker.mjs",
     "smoke:cloudflare": "node scripts/verify-cloudflare.mjs",
+    "test:e2e": "pnpm --filter @polyagent/web test:e2e",
     "postinstall": "pnpm db:generate"
   },
   "devDependencies": {

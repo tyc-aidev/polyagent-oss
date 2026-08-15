@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    if (!checkRateLimit(request, "bots:tick", 10, 60_000)) {
+    if (!(await checkRateLimit(request, "bots:tick", 10, 60_000))) {
       return apiError("Too many requests", "rate_limited", 429);
     }
 
