@@ -95,12 +95,19 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
   return (
     <form onSubmit={onSubmit} className="max-w-lg space-y-4">
       <div>
-        <Label>Bot name</Label>
-        <Input name="name" required defaultValue={initial?.name} placeholder="My Threshold Bot" />
+        <Label htmlFor="name">Bot name</Label>
+        <Input
+          id="name"
+          name="name"
+          required
+          defaultValue={initial?.name}
+          placeholder="My Threshold Bot"
+        />
       </div>
       <div>
-        <Label>Market IDs (comma-separated)</Label>
+        <Label htmlFor="markets">Market IDs (comma-separated)</Label>
         <Input
+          id="markets"
           name="markets"
           required
           defaultValue={initial?.markets}

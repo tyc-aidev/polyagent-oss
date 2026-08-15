@@ -120,3 +120,12 @@ jobs:
           SCHEDULER_MODE: docker
           SMOKE_BASE_URL: http://localhost:3000
           CRON_SECRET: ci-smoke-test-secret
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @polyagent/web exec playwright install --with-deps chromium
+
+      - name: Playwright e2e
+        run: pnpm test:e2e
+        env:
+          CI: true
+          SMOKE_BASE_URL: http://localhost:3000

@@ -15,7 +15,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (!checkRateLimit(request, "bots:create", 20, 60_000)) {
+    if (!(await checkRateLimit(request, "bots:create", 20, 60_000))) {
       return apiError("Too many requests", "rate_limited", 429);
     }
 

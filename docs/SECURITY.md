@@ -18,7 +18,7 @@ Use this checklist before exposing a PolyAgent instance to the public internet.
 
 ## Rate limiting
 
-In-memory rate limits apply per IP:
+Limits apply per client IP (`x-forwarded-for` first hop):
 
 | Route | Limit |
 |-------|-------|
@@ -27,7 +27,12 @@ In-memory rate limits apply per IP:
 | `POST /api/bots/:id/tick` | 10/min |
 | `POST /api/auth/login` | 10/min |
 
-On Cloudflare at scale, consider adding Workers Rate Limiting bindings for distributed enforcement.
+| Runtime | Backend |
+|---------|---------|
+| Docker / `next dev` | In-memory map (resets on process restart) |
+| Cloudflare (`SCHEDULER_MODE=cloudflare`) | Shared `MARKET_CACHE` KV keys `rl:{scope}:{ip}` |
+
+KV enforcement is shared across Worker isolates (unlike in-memory limits).
 
 ## Request limits
 
@@ -47,7 +52,7 @@ All responses include:
 
 - Multi-user auth or role-based access control
 - CSRF tokens (mitigated by `SameSite=lax` cookies for same-origin dashboard use)
-- Distributed rate limiting (in-memory only; resets on Worker cold start)
+- Multi-isolate *atomic* rate limiting (KV counters can race slightly under burst)
 - Audit logging
 
 ## Reporting vulnerabilities

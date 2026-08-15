@@ -5,7 +5,7 @@ import { checkRateLimit } from "@/lib/api/request";
 
 export async function GET(request: Request) {
   try {
-    if (!checkRateLimit(request, "markets", 60, 60_000)) {
+    if (!(await checkRateLimit(request, "markets", 60, 60_000))) {
       return apiError("Too many requests", "rate_limited", 429);
     }
 
