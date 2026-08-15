@@ -17,7 +17,7 @@ export const hero = {
   eyebrow: "Open source · Paper trading",
   title: "Run prediction-market agents without risking capital",
   subtitle:
-    "PolyAgent OSS simulates bot strategies against live Polymarket Gamma data. Explore markets, configure agents, tick on a schedule, and inspect every decision.",
+    "PolyAgent OSS simulates bot strategies against live Polymarket Gamma data. Explore markets, discover catalog alphas, backtest on stored snapshots, and inspect every paper decision.",
   primaryCta: { href: "/markets", label: "Open dashboard" },
   secondaryCta: { href: "/demo", label: "View demo" },
 } as const;
@@ -44,6 +44,11 @@ export const features = [
     title: "Market explorer",
     description:
       "Browse live Polymarket markets, prices, and volume before wiring them into a bot.",
+  },
+  {
+    title: "Alpha lab",
+    description:
+      "Discover catalog signals, compute market features, and backtest alphas against imported or tick-captured snapshots.",
   },
   {
     title: "Scheduled ticks",
@@ -78,6 +83,12 @@ export const steps = [
     title: "Tick & review",
     description: "Run manual or scheduled ticks, then inspect portfolio, positions, and decisions.",
   },
+  {
+    step: "4",
+    title: "Discover & backtest alphas",
+    description:
+      "Score the catalog on a market, then replay paper P&L on stored snapshots before promoting a rule.",
+  },
 ] as const;
 
 export const faqs = [
@@ -101,6 +112,11 @@ export const faqs = [
     answer:
       "Optionally. Set DASHBOARD_PASSWORD for a simple password gate on public deploys. Internal cron routes use CRON_SECRET.",
   },
+  {
+    question: "Can I backtest an alpha?",
+    answer:
+      "Yes. The Alpha Lab and POST /api/backtests replay catalog signals on stored or imported snapshots using the paper simulator. Fills are mid-price only — see the report limitations.",
+  },
 ] as const;
 
 export const cta = {
@@ -112,6 +128,7 @@ export const cta = {
 
 export const footerLinks = [
   { href: "/markets", label: "Markets" },
+  { href: "/alphas", label: "Alphas" },
   { href: "/bots", label: "Bots" },
   { href: "/demo", label: "Demo" },
   { href: "/login", label: "Sign in" },

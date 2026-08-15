@@ -108,6 +108,13 @@ async function main() {
     assert(demo, 'Demo bot not found — run migrations + seed against production DB');
   }
 
+  logStep("Alpha catalog");
+  {
+    const { status, body } = await api("/api/alphas");
+    assert(status === 200, `Alphas returned ${status}`);
+    assert(Array.isArray(body?.alphas) && body.alphas.length >= 6, "Alpha catalog missing");
+  }
+
   console.log("\n✓ Cloudflare verification passed\n");
 }
 

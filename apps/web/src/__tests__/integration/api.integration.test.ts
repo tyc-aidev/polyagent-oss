@@ -10,6 +10,8 @@ import { GET as botsGet, POST as botsPost } from "@/app/api/bots/route";
 import { GET as botGet, PATCH as botPatch, DELETE as botDelete } from "@/app/api/bots/[id]/route";
 import { POST as cronPost } from "@/app/api/internal/cron/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
+import { GET as alphasGet } from "@/app/api/alphas/route";
+import { POST as backtestsPost } from "@/app/api/backtests/route";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const describeIfDb = DATABASE_URL ? describe : describe.skip;
@@ -160,5 +162,51 @@ describeIfDb("API integration (real database)", () => {
     } finally {
       process.env.DASHBOARD_PASSWORD = previous;
     }
+  });
+
+  it("GET /api/alphas returns the research catalog", async () => {
+    const response = await alphasGet(new Request("http://test/api/alphas"));
+    expect(response.status).toBe(200);
+    const body = await readJson<{ alphas: Array<{ id: string; hypothesis: string }> }>(response);
+    expect(body.alphas.length).toBeGreaterThanOrEqual(6);
+    expect(body.alphas.every((alpha) => alpha.hypothesis.length > 0)).toBe(true);
+  });
+
+  it("POST /api/backtests replays inline bars", async () => {
+    const response = await backtestsPost(
+      jsonRequest("http://test/api/backtests", {
+        method: "POST",
+        body: JSON.stringify({
+          alphaId: "threshold_yes",
+          marketIds: ["integration-test-market"],
+          parameters: { buyYesBelow: 0.35 },
+          startingBalance: 10_000,
+          maxPositionSize: 50,
+          bars: [
+            {
+              marketId: "integration-test-market",
+              capturedAt: "2026-01-01T00:00:00.000Z",
+              yesPrice: 0.2,
+              noPrice: 0.8,
+              volume24h: 1_000,
+            },
+            {
+              marketId: "integration-test-market",
+              capturedAt: "2026-01-01T00:05:00.000Z",
+              yesPrice: 0.5,
+              noPrice: 0.5,
+              volume24h: 1_000,
+            },
+          ],
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await readJson<{ metrics: { trades: number; ticks: number }; limitations: string[] }>(
+      response,
+    );
+    expect(body.metrics.ticks).toBe(2);
+    expect(body.metrics.trades).toBeGreaterThan(0);
+    expect(body.limitations.length).toBeGreaterThan(0);
   });
 });

@@ -369,7 +369,7 @@ These rules are fixed for v0.1. Documented here so behavior is predictable and t
 | **Daily loss limit** | If realized + unrealized P&L for the day drops below `-maxDailyLoss`, bot auto-pauses |
 | **Starting balance** | `config.startingBalance` (default 10,000 USDC); set once at bot creation |
 
-**Deferred to Phase 1.5**: Historical replay / backtesting (replaying past Gamma prices over a date range).
+**Phase 1.5 (implemented)**: Historical replay / backtesting replays stored or imported `MarketPriceSnapshot` bars through the paper simulator (`POST /api/backtests`). Live Gamma is not called during replay.
 
 ### 7.3 Key Files
 

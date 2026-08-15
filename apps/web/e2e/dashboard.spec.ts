@@ -11,6 +11,13 @@ test("demo page shows seed bot and links to detail", async ({ page }) => {
   }
 });
 
+test("alpha lab lists catalog alphas", async ({ page }) => {
+  await page.goto("/alphas");
+  await expect(page.getByRole("heading", { name: /alpha lab/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /threshold yes/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /run backtest/i })).toBeVisible();
+});
+
 test("new bot form requires name and markets", async ({ page }) => {
   await page.goto("/bots/new");
   await expect(page.getByLabel(/bot name/i)).toBeVisible();
