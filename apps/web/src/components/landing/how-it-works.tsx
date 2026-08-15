@@ -6,11 +6,11 @@ export function LandingHowItWorks() {
     <Section id="how-it-works" className="space-y-10">
       <SectionHeading
         eyebrow="How it works"
-        title="From market to decision in three steps"
-        description="A simple loop for evaluating agent strategies against live market snapshots."
+        title="From market to backtest in four steps"
+        description="A simple loop for discovering alphas and evaluating them against live and historical snapshots."
         align="center"
       />
-      <ol className="grid gap-6 md:grid-cols-3">
+      <ol className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {steps.map((item) => (
           <li
             key={item.step}

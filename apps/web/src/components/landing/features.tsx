@@ -2,6 +2,7 @@ import {
   Bot,
   CalendarClock,
   ChartLine,
+  FlaskConical,
   HardDrive,
   ListTree,
   Store,
@@ -9,7 +10,7 @@ import {
 import { features } from "@/lib/landing-content";
 import { Section, SectionHeading } from "./section";
 
-const icons = [Bot, ChartLine, Store, CalendarClock, ListTree, HardDrive];
+const icons = [Bot, ChartLine, Store, FlaskConical, CalendarClock, ListTree, HardDrive];
 
 export function LandingFeatures() {
   return (
@@ -17,7 +18,7 @@ export function LandingFeatures() {
       <SectionHeading
         eyebrow="Features"
         title="Everything you need to experiment with market bots"
-        description="From market discovery to scheduled ticks and decision history — built for paper trading research."
+        description="From market discovery and catalog alphas to scheduled ticks and decision history — built for paper trading research."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature, index) => {

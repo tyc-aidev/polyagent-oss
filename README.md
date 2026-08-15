@@ -11,6 +11,7 @@ Open-source, self-hostable platform for **paper trading** prediction market bots
 
 - Rule-based **ThresholdAgent** for demo and experimentation
 - Paper trading simulator with portfolio, P&L, and risk limits
+- **Alpha lab**: catalog discovery, market features, and historical replay backtests
 - Web dashboard: market explorer, bot CRUD, tick history, manual runs
 - Deploy on **Docker** (self-host) or **Cloudflare Workers** (OpenNext)
 
@@ -35,7 +36,7 @@ pnpm db:seed
 pnpm dev
 ```
 
-Open [http://localhost:3000/demo](http://localhost:3000/demo) for the onboarding walkthrough.
+Open [http://localhost:3000/demo](http://localhost:3000/demo) for the onboarding walkthrough, or [http://localhost:3000/alphas](http://localhost:3000/alphas) to discover catalog alphas and run paper backtests.
 
 ### Full stack via Docker Compose
 
@@ -98,6 +99,22 @@ SMOKE_BASE_URL=https://your-worker.workers.dev CRON_SECRET=... pnpm smoke:cloudf
 See [docs/CLOUDFLARE.md](docs/CLOUDFLARE.md) for Prisma Postgres + Accelerate setup (pattern from [interactive-partners](https://github.com/tyc-aidev/interactive-partners)).
 
 Local dev: `cd apps/web && ./scripts/setup-env.sh` → creates `.env.local` from `env.example`.
+
+## Alpha discovery APIs
+
+Agents can list research alphas, inspect market features, import snapshot history, and backtest without live Gamma calls during replay:
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas |
+| `GET` | `/api/alphas/:id` | Single alpha definition |
+| `GET` | `/api/markets/:id/history` | Stored `MarketPriceSnapshot` bars |
+| `POST` | `/api/markets/:id/history` | Import agent-supplied bars |
+| `GET` | `/api/markets/:id/features` | Momentum, residual, volume z-score, … |
+| `GET` | `/api/markets/:id/signals` | Ranked catalog evaluation on a market |
+| `POST` | `/api/backtests` | Replay paper simulator on stored or inline bars |
+
+`POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
 
 ## Security
 

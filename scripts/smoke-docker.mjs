@@ -160,6 +160,51 @@ async function main() {
     assert(status === 200, `Demo tick failed (${status}): ${JSON.stringify(body)}`);
   }
 
+  logStep("Alpha catalog is discoverable");
+  {
+    const { status, body } = await api("/api/alphas");
+    assert(status === 200, `Alphas returned ${status}`);
+    assert(Array.isArray(body?.alphas) && body.alphas.length >= 6, "Alpha catalog missing entries");
+    assert(
+      body.alphas.every((a) => typeof a.id === "string" && typeof a.hypothesis === "string"),
+      "Alpha catalog entries missing id/hypothesis",
+    );
+  }
+
+  logStep("Inline-bar backtest");
+  {
+    const { status, body } = await api("/api/backtests", {
+      method: "POST",
+      body: JSON.stringify({
+        alphaId: "threshold_yes",
+        marketIds: [marketId],
+        parameters: { buyYesBelow: 0.99 },
+        startingBalance: 10_000,
+        maxPositionSize: 25,
+        bars: [
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:00:00.000Z",
+            yesPrice: 0.2,
+            noPrice: 0.8,
+            volume24h: 1500,
+          },
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:05:00.000Z",
+            yesPrice: 0.55,
+            noPrice: 0.45,
+            volume24h: 1500,
+          },
+        ],
+      }),
+    });
+    assert(status === 201, `Backtest failed (${status}): ${JSON.stringify(body)}`);
+    assert(body?.metrics?.ticks === 2, "Backtest ticks != 2");
+    assert(body?.metrics?.trades >= 1, "Backtest recorded no trades");
+    assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Missing limitations");
+  }
+
   logStep("Cleanup smoke-test bot");
   {
     const { status } = await api(`/api/bots/${smokeBotId}`, {

@@ -33,6 +33,13 @@ export default async function DemoPage() {
           <li>Review the pre-seeded demo bot (or create your own)</li>
           <li>Run a tick to analyze markets and simulate trades</li>
           <li>Check decisions, positions, and P&L on the bot detail page</li>
+          <li>
+            Open the{" "}
+            <Link href="/alphas" className="text-primary hover:underline">
+              Alpha Lab
+            </Link>{" "}
+            to discover catalog signals and backtest against snapshots
+          </li>
         </ol>
       </Card>
 

@@ -33,8 +33,12 @@ export default async function MarketsPage({
         Copy a market ID when{" "}
         <Link href="/bots/new" className="text-primary hover:underline">
           creating a bot
-        </Link>
-        .
+        </Link>{" "}
+        or paste it into the{" "}
+        <Link href="/alphas" className="text-primary hover:underline">
+          Alpha Lab
+        </Link>{" "}
+        to score catalog signals.
       </p>
     </div>
   );

@@ -2,6 +2,17 @@
 
 All notable changes to PolyAgent OSS are documented here.
 
+## [Unreleased]
+
+### Added
+
+- Alpha catalog (threshold, mean-reversion, momentum, volume-spike, extreme-mispricing) with versioned hypotheses and parameters
+- Market feature extraction from stored or imported `MarketPriceSnapshot` bars
+- Agent-facing APIs: `/api/alphas`, `/api/markets/:id/{history,features,signals}`, `POST /api/backtests`
+- Historical replay backtest engine (paper simulator, no live Gamma calls)
+- Alpha Lab dashboard (`/alphas`) for catalog discovery, signal scoring, P&L curve, and trade log
+- History import so agents can seed a tape without waiting for bot ticks
+
 ## [0.1.0] — 2026-06-15
 
 First public alpha release. Paper trading only — no live execution.
