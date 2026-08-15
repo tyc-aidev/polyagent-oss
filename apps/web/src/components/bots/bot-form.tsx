@@ -1,14 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import type { AlphaDefinition } from "@polyagent/shared";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
+
+type StrategyType = "threshold" | "alpha";
 
 interface BotFormValues {
   name: string;
   markets: string;
+  strategyType: StrategyType;
   buyYesBelow: string;
+  alphaId: string;
+  alphaParameters: Record<string, string>;
+  lookback: string;
   maxPositionSize: string;
   confidenceThreshold: string;
   startingBalance: string;
@@ -17,13 +24,24 @@ interface BotFormValues {
 interface BotFormProps {
   mode: "create" | "edit";
   botId?: string;
+  alphas: AlphaDefinition[];
   initial?: Partial<BotFormValues> & { status?: string };
 }
 
-export function BotForm({ mode, botId, initial }: BotFormProps) {
+export function BotForm({ mode, botId, alphas, initial }: BotFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [strategyType, setStrategyType] = useState<StrategyType>(initial?.strategyType ?? "threshold");
+  const [alphaId, setAlphaId] = useState(initial?.alphaId ?? alphas[0]?.id ?? "threshold_yes");
+  const [alphaParameters, setAlphaParameters] = useState<Record<string, string>>(
+    initial?.alphaParameters ?? {},
+  );
+
+  const selectedAlpha = useMemo(
+    () => alphas.find((alpha) => alpha.id === alphaId) ?? alphas[0],
+    [alphas, alphaId],
+  );
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,6 +54,19 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
       .map((value) => value.trim())
       .filter(Boolean);
 
+    const parameters: Record<string, number> = {};
+    if (selectedAlpha) {
+      for (const spec of selectedAlpha.parameters) {
+        const raw = alphaParameters[spec.name];
+        if (raw === undefined || raw === "") continue;
+        const value = Number(raw);
+        if (Number.isFinite(value)) parameters[spec.name] = value;
+      }
+    }
+
+    const lookbackRaw = String(form.get("lookback") ?? "");
+    const lookback = Number(lookbackRaw);
+
     const payload = {
       name: String(form.get("name")),
       config: {
@@ -44,12 +75,20 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
           maxPositionSize: Number(form.get("maxPositionSize")),
           confidenceThreshold: Number(form.get("confidenceThreshold")),
         },
-        strategy: {
-          type: "threshold" as const,
-          parameters: {
-            buyYesBelow: Number(form.get("buyYesBelow")),
-          },
-        },
+        strategy:
+          strategyType === "alpha"
+            ? {
+                type: "alpha" as const,
+                alphaId,
+                parameters: Object.keys(parameters).length > 0 ? parameters : undefined,
+                lookback: Number.isFinite(lookback) && lookback > 0 ? lookback : undefined,
+              }
+            : {
+                type: "threshold" as const,
+                parameters: {
+                  buyYesBelow: Number(form.get("buyYesBelow")),
+                },
+              },
         mode: "paper" as const,
         updateIntervalMinutes: 15,
         startingBalance: Number(form.get("startingBalance")),
@@ -115,20 +154,94 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
         />
       </div>
       <div>
-        <Label>Buy YES below (0–1)</Label>
-        <Input
-          name="buyYesBelow"
-          type="number"
-          step="0.01"
-          min="0"
-          max="1"
-          required
-          defaultValue={initial?.buyYesBelow ?? "0.35"}
-        />
+        <Label htmlFor="strategyType">Strategy</Label>
+        <select
+          id="strategyType"
+          name="strategyType"
+          value={strategyType}
+          onChange={(event) => setStrategyType(event.target.value as StrategyType)}
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+        >
+          <option value="threshold">Threshold (price rule)</option>
+          <option value="alpha">Catalog alpha</option>
+        </select>
       </div>
+      {strategyType === "threshold" ? (
+        <div>
+          <Label htmlFor="buyYesBelow">Buy YES below (0–1)</Label>
+          <Input
+            id="buyYesBelow"
+            name="buyYesBelow"
+            type="number"
+            step="0.01"
+            min="0"
+            max="1"
+            required
+            defaultValue={initial?.buyYesBelow ?? "0.35"}
+          />
+        </div>
+      ) : (
+        <>
+          <div>
+            <Label htmlFor="alphaId">Catalog alpha</Label>
+            <select
+              id="alphaId"
+              name="alphaId"
+              value={alphaId}
+              onChange={(event) => {
+                setAlphaId(event.target.value);
+                setAlphaParameters({});
+              }}
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {alphas.map((alpha) => (
+                <option key={alpha.id} value={alpha.id}>
+                  {alpha.name}
+                </option>
+              ))}
+            </select>
+            {selectedAlpha && (
+              <p className="mt-1 text-xs text-muted-foreground">{selectedAlpha.hypothesis}</p>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="lookback">Feature lookback (bars)</Label>
+            <Input
+              id="lookback"
+              name="lookback"
+              type="number"
+              min="1"
+              max="100"
+              defaultValue={initial?.lookback ?? "5"}
+            />
+          </div>
+          {selectedAlpha?.parameters.map((spec) => (
+            <div key={spec.name}>
+              <Label htmlFor={`alpha-${spec.name}`}>
+                {spec.name}{" "}
+                <span className="font-normal text-muted-foreground">(default {spec.defaultValue})</span>
+              </Label>
+              <Input
+                id={`alpha-${spec.name}`}
+                type="number"
+                step="any"
+                min={spec.minimum}
+                max={spec.maximum}
+                placeholder={String(spec.defaultValue)}
+                value={alphaParameters[spec.name] ?? ""}
+                onChange={(event) =>
+                  setAlphaParameters((current) => ({ ...current, [spec.name]: event.target.value }))
+                }
+              />
+              <p className="mt-1 text-xs text-muted-foreground">{spec.description}</p>
+            </div>
+          ))}
+        </>
+      )}
       <div>
-        <Label>Max position size (USDC)</Label>
+        <Label htmlFor="maxPositionSize">Max position size (USDC)</Label>
         <Input
+          id="maxPositionSize"
           name="maxPositionSize"
           type="number"
           min="1"
@@ -137,8 +250,9 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
         />
       </div>
       <div>
-        <Label>Confidence threshold (0–1)</Label>
+        <Label htmlFor="confidenceThreshold">Confidence threshold (0–1)</Label>
         <Input
+          id="confidenceThreshold"
           name="confidenceThreshold"
           type="number"
           step="0.01"
@@ -149,8 +263,9 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
         />
       </div>
       <div>
-        <Label>Starting balance (USDC)</Label>
+        <Label htmlFor="startingBalance">Starting balance (USDC)</Label>
         <Input
+          id="startingBalance"
           name="startingBalance"
           type="number"
           min="1"
@@ -161,8 +276,9 @@ export function BotForm({ mode, botId, initial }: BotFormProps) {
       </div>
       {mode === "edit" && (
         <div>
-          <Label>Status</Label>
+          <Label htmlFor="status">Status</Label>
           <select
+            id="status"
             name="status"
             defaultValue={initial?.status ?? "paused"}
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"

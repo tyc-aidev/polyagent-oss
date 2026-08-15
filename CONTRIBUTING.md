@@ -33,7 +33,7 @@ pnpm test
 ## Scope guidelines (MVP)
 
 - **Paper trading only** — no live execution, wallet integration, or private key handling.
-- **ThresholdAgent only** — LLM and multi-agent features are Phase 2.
+- **ThresholdAgent + catalog AlphaAgent** — LLM and multi-agent features are Phase 2.
 - **PostgreSQL via Prisma** — no D1 or alternate databases.
 - Keep changes focused; avoid unrelated refactors.
 

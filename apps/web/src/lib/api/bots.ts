@@ -6,6 +6,7 @@ import {
   type CreateBotInput,
   type UpdateBotInput,
 } from "@polyagent/shared";
+import { getAlpha } from "@/lib/alpha/catalog";
 import { parseBotConfig, getCashBalance } from "@/lib/runner/bot-config";
 import { portfolioFromDb } from "@/lib/runner/portfolio-db";
 import { parsePagination, type PaginationParams } from "./pagination";
@@ -56,9 +57,18 @@ export async function listBots(): Promise<BotSummary[]> {
   });
 }
 
+function assertKnownAlpha(config: { strategy: { type: string; alphaId?: string } }): void {
+  if (config.strategy.type !== "alpha") return;
+  const alphaId = config.strategy.alphaId;
+  if (!alphaId || !getAlpha(alphaId)) {
+    throw new Error(`Alpha not found: ${alphaId ?? ""}`);
+  }
+}
+
 export async function createBot(input: CreateBotInput) {
   const prisma = await getPrismaAsync();
   const data = createBotSchema.parse(input);
+  assertKnownAlpha(data.config);
   const config = {
     ...data.config,
     cashBalance: data.config.startingBalance,
@@ -113,6 +123,9 @@ export async function updateBot(id: string, input: UpdateBotInput) {
   }
 
   const currentConfig = parseBotConfig(existing.config);
+  if (data.config) {
+    assertKnownAlpha(data.config);
+  }
   const nextConfig = data.config
     ? {
         ...data.config,

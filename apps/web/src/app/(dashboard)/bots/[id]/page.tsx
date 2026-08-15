@@ -43,6 +43,12 @@ export default async function BotDetailPage({
             <BotStatusBadge status={bot.status} />
           </div>
           <p className="text-muted-foreground text-sm mt-1 font-mono">{bot.id}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Strategy:{" "}
+            {bot.config.strategy.type === "alpha"
+              ? `catalog alpha · ${bot.config.strategy.alphaId}`
+              : "threshold"}
+          </p>
         </div>
         <div className="flex gap-2">
           <Link href={`/bots/${id}/edit`}>

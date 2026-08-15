@@ -9,7 +9,7 @@ Open-source, self-hostable platform for **paper trading** prediction market bots
 
 ## Features
 
-- Rule-based **ThresholdAgent** for demo and experimentation
+- Rule-based **ThresholdAgent** and catalog **AlphaAgent** for demo and experimentation
 - Paper trading simulator with portfolio, P&L, and risk limits
 - **Alpha lab**: catalog discovery, market features, and historical replay backtests
 - Web dashboard: market explorer, bot CRUD, tick history, manual runs
@@ -115,6 +115,16 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `POST` | `/api/backtests` | Replay paper simulator on stored or inline bars |
 
 `POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
+
+Create a live paper bot with the same evaluator:
+
+```json
+{
+  "strategy": { "type": "alpha", "alphaId": "momentum", "parameters": { "momentumThreshold": 0.03 } }
+}
+```
+
+Threshold configs (`strategy.type = "threshold"`) are unchanged.
 
 ## Security
 

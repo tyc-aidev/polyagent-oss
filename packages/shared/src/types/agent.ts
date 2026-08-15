@@ -1,3 +1,4 @@
+import type { PriceBar } from "./alpha";
 import type { BotConfig } from "./bot";
 import type { MarketSnapshot } from "./market";
 
@@ -45,6 +46,8 @@ export interface AnalysisContext {
   recentDecisions: AgentDecision[];
   config: BotConfig;
   timestamp: Date;
+  /** Snapshot tape at or before `timestamp`, including the current tick when provided. */
+  recentBars?: PriceBar[];
 }
 
 export interface IAgent {

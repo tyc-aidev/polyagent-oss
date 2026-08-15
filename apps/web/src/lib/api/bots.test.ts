@@ -61,6 +61,35 @@ describe("createBot", () => {
       }),
     ).rejects.toThrow();
   });
+
+  it("creates a paused catalog-alpha bot", async () => {
+    const alphaConfig = {
+      ...validConfig,
+      strategy: { type: "alpha" as const, alphaId: "momentum", parameters: { momentumThreshold: 0.03 } },
+    };
+    mockPrisma.bot.create.mockResolvedValue({
+      id: "bot-alpha",
+      name: "Momentum Bot",
+      status: "paused",
+      config: { ...alphaConfig, cashBalance: 10_000 },
+    });
+
+    const bot = await createBot({ name: "Momentum Bot", config: alphaConfig });
+    expect(bot.status).toBe("paused");
+    expect(mockPrisma.bot.create).toHaveBeenCalled();
+  });
+
+  it("rejects an unknown catalog alpha id", async () => {
+    await expect(
+      createBot({
+        name: "Ghost",
+        config: {
+          ...validConfig,
+          strategy: { type: "alpha", alphaId: "not-a-real-alpha" },
+        },
+      }),
+    ).rejects.toThrow(/not found/i);
+  });
 });
 
 describe("listBots", () => {

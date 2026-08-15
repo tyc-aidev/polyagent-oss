@@ -1,6 +1,5 @@
 import type {
   AgentDecision,
-  AlphaSignal,
   BacktestEquityPoint,
   BacktestReport,
   BacktestTrade,
@@ -12,6 +11,7 @@ import { portfolioEquity } from "@/lib/paper-trading/pnl";
 import { createPortfolio } from "@/lib/paper-trading/portfolio";
 import { runSimulatorTick } from "@/lib/paper-trading/simulator";
 import { evaluateAlpha, getAlpha, resolveAlphaParameters } from "./catalog";
+import { signalToDecision } from "./decisions";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK, sortBars } from "./features";
 import { BACKTEST_LIMITATIONS } from "./limitations";
 
@@ -35,27 +35,6 @@ function snapshotFromBar(bar: PriceBar): MarketSnapshot {
     volume24h: bar.volume24h,
     liquidity: 0,
     resolved: false,
-  };
-}
-
-function signalToDecision(
-  signal: AlphaSignal,
-  botId: string,
-  size: number,
-  yesPrice: number,
-): AgentDecision {
-  const price = signal.action === "BUY_NO" ? 1 - yesPrice : yesPrice;
-  return {
-    id: crypto.randomUUID(),
-    botId,
-    marketId: signal.marketId,
-    timestamp: signal.timestamp,
-    action: signal.action,
-    size: signal.action === "HOLD" ? 0 : size,
-    price,
-    confidence: signal.confidence,
-    reasoning: signal.reasoning,
-    metadata: { alphaId: signal.alphaId, score: signal.score },
   };
 }
 
