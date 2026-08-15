@@ -22,6 +22,9 @@ test("new bot form requires name and markets", async ({ page }) => {
   await page.goto("/bots/new");
   await expect(page.getByLabel(/bot name/i)).toBeVisible();
   await expect(page.getByLabel(/market ids/i)).toBeVisible();
+  await expect(page.getByLabel(/^strategy$/i)).toBeVisible();
+  await page.getByLabel(/^strategy$/i).selectOption("alpha");
+  await expect(page.getByLabel(/catalog alpha/i)).toBeVisible();
   await page.getByRole("button", { name: /create bot/i }).click();
   await expect(page).toHaveURL(/\/bots\/new/);
 });

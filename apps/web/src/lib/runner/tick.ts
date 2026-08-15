@@ -2,6 +2,9 @@ import type { Prisma } from "@polyagent/db";
 import { getPrismaAsync } from "@/lib/db";
 import type { AgentDecision, MarketSnapshot } from "@polyagent/shared";
 import { createAgent } from "@/lib/agents/registry";
+import { barFromSnapshot } from "@/lib/alpha/decisions";
+import { DEFAULT_FEATURE_LOOKBACK } from "@/lib/alpha/features";
+import { listMarketHistory } from "@/lib/alpha/snapshots";
 import { getCacheStore } from "@/lib/polymarket/get-cache";
 import { GammaClient } from "@/lib/polymarket/gamma";
 import { runSimulatorTick } from "@/lib/paper-trading/simulator";
@@ -77,6 +80,12 @@ export async function runBotTick(botId: string): Promise<TickResult> {
         take: 10,
       });
 
+      const lookback =
+        config.strategy.type === "alpha"
+          ? (config.strategy.lookback ?? DEFAULT_FEATURE_LOOKBACK)
+          : DEFAULT_FEATURE_LOOKBACK;
+      const history = await listMarketHistory(market.id, { limit: Math.max(lookback + 1, 20) });
+
       const agentDecisions = await agent.analyze({
         market,
         portfolio,
@@ -93,6 +102,7 @@ export async function runBotTick(botId: string): Promise<TickResult> {
         })),
         config,
         timestamp,
+        recentBars: [...history, barFromSnapshot(market, timestamp)],
       });
 
       decisions.push(...agentDecisions);

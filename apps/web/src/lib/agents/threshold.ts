@@ -35,6 +35,9 @@ export class ThresholdAgent implements IAgent {
 
   async analyze(context: AnalysisContext): Promise<AgentDecision[]> {
     const { market, config } = context;
+    if (config.strategy.type !== "threshold") {
+      return [holdDecision(context, "ThresholdAgent requires strategy.type = threshold")];
+    }
     const params = config.strategy.parameters;
 
     if (params.minVolume24h && market.volume24h < params.minVolume24h) {

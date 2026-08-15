@@ -172,6 +172,30 @@ describeIfDb("API integration (real database)", () => {
     expect(body.alphas.every((alpha) => alpha.hypothesis.length > 0)).toBe(true);
   });
 
+  it("POST /api/bots accepts a catalog alpha strategy", async () => {
+    const response = await botsPost(
+      jsonRequest("http://test/api/bots", {
+        method: "POST",
+        body: JSON.stringify({
+          name: `Alpha Bot ${Date.now()}`,
+          config: {
+            ...validConfig,
+            strategy: { type: "alpha", alphaId: "mean_reversion", parameters: { residualThreshold: 0.05 } },
+          },
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await readJson<{ id: string; config: { strategy: { type: string; alphaId?: string } } }>(
+      response,
+    );
+    expect(body.config.strategy.type).toBe("alpha");
+    expect(body.config.strategy.alphaId).toBe("mean_reversion");
+    if (body.id) {
+      await botDelete(new Request("http://test"), { params: Promise.resolve({ id: body.id }) });
+    }
+  });
+
   it("POST /api/backtests replays inline bars", async () => {
     const response = await backtestsPost(
       jsonRequest("http://test/api/backtests", {

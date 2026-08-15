@@ -27,10 +27,31 @@ describe("botConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-threshold strategies", () => {
+  it("rejects unknown strategy types", () => {
     const result = botConfigSchema.safeParse({
       ...validConfig,
       strategy: { type: "llm", parameters: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a catalog alpha strategy", () => {
+    const result = botConfigSchema.safeParse({
+      ...validConfig,
+      strategy: {
+        type: "alpha",
+        alphaId: "momentum",
+        parameters: { momentumThreshold: 0.03 },
+        lookback: 8,
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("requires alphaId on alpha strategies", () => {
+    const result = botConfigSchema.safeParse({
+      ...validConfig,
+      strategy: { type: "alpha" },
     });
     expect(result.success).toBe(false);
   });

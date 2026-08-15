@@ -31,9 +31,9 @@ export const stats = [
 
 export const features = [
   {
-    title: "Threshold agents",
+    title: "Threshold and catalog agents",
     description:
-      "Rule-based agents that react to YES/NO prices with configurable entry, exit, and size limits.",
+      "Rule-based threshold bots, or live catalog alphas that use the same evaluator as the backtest engine.",
   },
   {
     title: "Paper portfolio & P&L",

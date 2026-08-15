@@ -1,5 +1,23 @@
 export type BotStatus = "active" | "paused" | "archived";
 
+export interface ThresholdStrategy {
+  type: "threshold";
+  parameters: {
+    buyYesBelow?: number;
+    buyNoBelow?: number;
+    minVolume24h?: number;
+  };
+}
+
+export interface AlphaStrategy {
+  type: "alpha";
+  alphaId: string;
+  parameters?: Record<string, number>;
+  lookback?: number;
+}
+
+export type BotStrategy = ThresholdStrategy | AlphaStrategy;
+
 export interface BotConfig {
   markets: string[];
   risk: {
@@ -7,14 +25,7 @@ export interface BotConfig {
     confidenceThreshold: number;
     maxDailyLoss?: number;
   };
-  strategy: {
-    type: "threshold";
-    parameters: {
-      buyYesBelow?: number;
-      buyNoBelow?: number;
-      minVolume24h?: number;
-    };
-  };
+  strategy: BotStrategy;
   mode: "paper";
   updateIntervalMinutes: number;
   startingBalance: number;
