@@ -13,6 +13,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Alpha Lab dashboard (`/alphas`) for catalog discovery, signal scoring, P&L curve, and trade log
 - History import so agents can seed a tape without waiting for bot ticks
 - Live `strategy.type = "alpha"` bots: AlphaAgent evaluates the catalog on each tick using stored snapshots plus the live mid (threshold bots unchanged)
+- Independent snapshot harvester: 5-minute cron samples top-N / bot / configured markets, dedupes by min interval, and prunes by retention (`POST /api/internal/harvest`)
 
 ## [0.1.0] — 2026-06-15
 

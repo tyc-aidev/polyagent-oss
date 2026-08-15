@@ -459,7 +459,8 @@ apps/web/lib/runner/
 | GET | `/api/bots/:id/portfolio` | Cash balance, P&L summary |
 | GET | `/api/bots/:id/ticks` | Tick run history |
 | GET | `/api/health` | Health check (app + DB connectivity) |
-| POST | `/api/internal/cron` | Cloudflare Cron entry: enqueue active bot IDs (protected by `CRON_SECRET`) |
+| POST | `/api/internal/cron` | Cloudflare Cron entry: harvest snapshots + enqueue active bot IDs (protected by `CRON_SECRET`) |
+| POST | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` without running bot ticks |
 | POST | `/api/internal/queue` | Cloudflare Queue consumer: execute tick for one bot ID |
 
 All routes return JSON. Errors use `{ error: string, code: string }` shape.

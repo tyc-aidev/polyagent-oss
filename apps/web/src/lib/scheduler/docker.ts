@@ -1,4 +1,5 @@
 import { schedule, type ScheduledTask } from "node-cron";
+import { harvestMarketSnapshots } from "@/lib/alpha/harvest";
 import { runActiveBotTicks } from "@/lib/runner/tick";
 
 /** Matches Cloudflare Worker cron in wrangler.jsonc. */
@@ -21,6 +22,9 @@ export function startDockerScheduler(): void {
   if (task || process.env.SCHEDULER_MODE !== "docker") return;
 
   task = schedule(DOCKER_CRON_EXPRESSION, () => {
+    harvestMarketSnapshots().catch((error) => {
+      console.error("[scheduler] snapshot harvest failed:", error);
+    });
     runActiveBotTicks().catch((error) => {
       console.error("[scheduler] tick batch failed:", error);
     });

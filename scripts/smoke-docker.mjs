@@ -151,6 +151,20 @@ async function main() {
     } else {
       assert(status === 200, `Cron returned ${status}: ${JSON.stringify(body)}`);
       assert(typeof body?.enqueued === "number", "Cron response missing enqueued count");
+      assert(body?.harvest && typeof body.harvest.considered === "number", "Cron missing harvest");
+    }
+  }
+
+  logStep("Snapshot harvest endpoint");
+  {
+    const headers = CRON_SECRET ? { "x-cron-secret": CRON_SECRET } : {};
+    const { status, body } = await api("/api/internal/harvest", { method: "POST", headers });
+    if (status === 401 && !CRON_SECRET) {
+      console.log("    (skipped — set CRON_SECRET for harvest auth)");
+    } else {
+      assert(status === 200, `Harvest returned ${status}: ${JSON.stringify(body)}`);
+      assert(typeof body?.harvest?.considered === "number", "Harvest response missing considered");
+      assert(typeof body?.harvest?.written === "number", "Harvest response missing written");
     }
   }
 
