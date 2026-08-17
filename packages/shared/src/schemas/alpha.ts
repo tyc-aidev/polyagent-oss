@@ -29,6 +29,18 @@ export const runBacktestSchema = z
     message: "from must be before or equal to to",
   });
 
+export const scanAlphasSchema = z.object({
+  marketIds: z.array(z.string().min(1)).max(50).optional(),
+  alphaIds: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
+  minConfidence: z.number().min(0).max(1).optional(),
+  action: z.enum(["BUY_YES", "BUY_NO", "HOLD", "SELL"]).optional(),
+  lookback: z.number().int().min(1).max(100).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+  universeLimit: z.number().int().min(1).max(50).optional(),
+  includeHolds: z.boolean().optional(),
+});
+
 export type PriceBarInput = z.infer<typeof priceBarInputSchema>;
 export type ImportHistoryInput = z.infer<typeof importHistorySchema>;
 export type RunBacktestInput = z.infer<typeof runBacktestSchema>;
+export type ScanAlphasInput = z.infer<typeof scanAlphasSchema>;

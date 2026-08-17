@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAlphaDefinition, listAlphaCatalog } from "./alphas";
+import { getAlphaDefinition, getAlphaResearchPlaybook, listAlphaCatalog } from "./alphas";
 
 describe("alpha catalog API helpers", () => {
   it("lists versioned catalog entries with hypotheses", () => {
@@ -20,5 +20,16 @@ describe("alpha catalog API helpers", () => {
 
   it("throws not found for an unknown id", () => {
     expect(() => getAlphaDefinition("missing")).toThrow(/not found/i);
+  });
+
+  it("publishes a five-step research playbook for agents", () => {
+    const playbook = getAlphaResearchPlaybook();
+    expect(playbook.map((step) => step.path)).toEqual([
+      "/api/alphas",
+      "/api/alphas/scan",
+      "/api/markets/:id/features",
+      "/api/backtests",
+      "/api/bots",
+    ]);
   });
 });

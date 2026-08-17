@@ -11,8 +11,8 @@ export default function AlphasPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Alpha Lab</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Discover catalog alphas, inspect market features, and replay paper backtests against
-          stored or imported snapshots.
+          Scan the live universe for catalog signals, inspect market features, and replay paper
+          backtests against stored or imported snapshots.
         </p>
       </div>
       <AlphaLab alphas={alphas} />

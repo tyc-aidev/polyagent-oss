@@ -12,6 +12,8 @@ import { POST as cronPost } from "@/app/api/internal/cron/route";
 import { POST as harvestPost } from "@/app/api/internal/harvest/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { GET as alphasGet } from "@/app/api/alphas/route";
+import { POST as alphasScanPost } from "@/app/api/alphas/scan/route";
+import { POST as historyPost } from "@/app/api/markets/[id]/history/route";
 import { POST as backtestsPost } from "@/app/api/backtests/route";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -184,9 +186,53 @@ describeIfDb("API integration (real database)", () => {
   it("GET /api/alphas returns the research catalog", async () => {
     const response = await alphasGet(new Request("http://test/api/alphas"));
     expect(response.status).toBe(200);
-    const body = await readJson<{ alphas: Array<{ id: string; hypothesis: string }> }>(response);
+    const body = await readJson<{
+      alphas: Array<{ id: string; hypothesis: string }>;
+      playbook: Array<{ path: string }>;
+    }>(response);
     expect(body.alphas.length).toBeGreaterThanOrEqual(6);
     expect(body.alphas.every((alpha) => alpha.hypothesis.length > 0)).toBe(true);
+    expect(body.playbook.some((step) => step.path === "/api/alphas/scan")).toBe(true);
+  });
+
+  it("POST /api/alphas/scan ranks imported history without live Gamma", async () => {
+    const marketId = `scan-test-${Date.now()}`;
+    const imported = await historyPost(
+      jsonRequest(`http://test/api/markets/${marketId}/history`, {
+        method: "POST",
+        body: JSON.stringify({
+          bars: [
+            {
+              capturedAt: "2026-01-01T00:00:00.000Z",
+              yesPrice: 0.18,
+              noPrice: 0.82,
+              volume24h: 2_500,
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ id: marketId }) },
+    );
+    expect(imported.status).toBe(201);
+
+    const response = await alphasScanPost(
+      jsonRequest("http://test/api/alphas/scan", {
+        method: "POST",
+        body: JSON.stringify({
+          marketIds: [marketId],
+          alphaIds: ["threshold_yes"],
+        }),
+      }),
+    );
+    expect(response.status).toBe(200);
+    const body = await readJson<{
+      scanned: number;
+      opportunities: Array<{ marketId: string; action: string; alphaId: string }>;
+    }>(response);
+    expect(body.scanned).toBe(1);
+    expect(body.opportunities[0]?.marketId).toBe(marketId);
+    expect(body.opportunities[0]?.alphaId).toBe("threshold_yes");
+    expect(body.opportunities[0]?.action).toBe("BUY_YES");
   });
 
   it("POST /api/bots accepts a catalog alpha strategy", async () => {

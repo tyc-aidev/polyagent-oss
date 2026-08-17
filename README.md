@@ -111,14 +111,19 @@ Agents can list research alphas, inspect market features, import snapshot histor
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas |
+| `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas + research playbook |
 | `GET` | `/api/alphas/:id` | Single alpha definition |
+| `GET`/`POST` | `/api/alphas/scan` | Rank catalog signals across the live (or specified) universe |
 | `GET` | `/api/markets/:id/history` | Stored `MarketPriceSnapshot` bars |
 | `POST` | `/api/markets/:id/history` | Import agent-supplied bars |
 | `GET` | `/api/markets/:id/features` | Momentum, residual, volume z-score, … |
 | `GET` | `/api/markets/:id/signals` | Ranked catalog evaluation on a market |
 | `POST` | `/api/backtests` | Replay paper simulator on stored or inline bars |
 | `POST` | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` (`CRON_SECRET`) |
+
+Agent loop: `GET /api/alphas` (hypotheses + playbook) → `GET /api/alphas/scan` (where the catalog is firing) → `POST /api/backtests` (replay a candidate) → `POST /api/bots` with `strategy.type=alpha`.
+
+`GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`. `POST` accepts the same body as JSON.
 
 `POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
 

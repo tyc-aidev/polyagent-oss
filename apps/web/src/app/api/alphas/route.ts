@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listAlphaCatalog } from "@/lib/api/alphas";
+import { getAlphaResearchPlaybook, listAlphaCatalog } from "@/lib/api/alphas";
 import { apiError, handleApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/request";
 
@@ -9,7 +9,10 @@ export async function GET(request: Request) {
       return apiError("Too many requests", "rate_limited", 429);
     }
 
-    return NextResponse.json({ alphas: listAlphaCatalog() });
+    return NextResponse.json({
+      alphas: listAlphaCatalog(),
+      playbook: getAlphaResearchPlaybook(),
+    });
   } catch (error) {
     return handleApiError(error);
   }

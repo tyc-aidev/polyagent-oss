@@ -114,6 +114,10 @@ async function main() {
     const { status, body } = await api("/api/alphas");
     assert(status === 200, `Alphas returned ${status}`);
     assert(Array.isArray(body?.alphas) && body.alphas.length >= 6, "Alpha catalog missing");
+    assert(
+      Array.isArray(body?.playbook) && body.playbook.some((s) => s.path === "/api/alphas/scan"),
+      "Alpha playbook missing scan step",
+    );
   }
 
   console.log("\n✓ Cloudflare verification passed\n");

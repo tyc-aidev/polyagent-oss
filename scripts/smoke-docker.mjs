@@ -183,6 +183,26 @@ async function main() {
       body.alphas.every((a) => typeof a.id === "string" && typeof a.hypothesis === "string"),
       "Alpha catalog entries missing id/hypothesis",
     );
+    assert(
+      Array.isArray(body?.playbook) && body.playbook.some((s) => s.path === "/api/alphas/scan"),
+      "Alpha playbook missing scan step",
+    );
+  }
+
+  logStep("Universe alpha scan");
+  {
+    const { status, body } = await api("/api/alphas/scan", {
+      method: "POST",
+      body: JSON.stringify({
+        marketIds: [marketId],
+        alphaIds: ["threshold_yes"],
+        limit: 5,
+      }),
+    });
+    assert(status === 200, `Alpha scan returned ${status}: ${JSON.stringify(body)}`);
+    assert(body?.scanned === 1, `Scan scanned ${body?.scanned}, expected 1`);
+    assert(Array.isArray(body?.opportunities), "Scan missing opportunities");
+    assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Scan missing limitations");
   }
 
   logStep("Inline-bar backtest");
