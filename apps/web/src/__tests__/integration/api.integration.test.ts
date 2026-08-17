@@ -162,9 +162,12 @@ describeIfDb("API integration (real database)", () => {
       }),
     );
     expect(response.status).toBe(200);
-    const body = await readJson<{ harvest: { considered: number; written: number } }>(response);
+    const body = await readJson<{ harvest: { considered: number; written: number; withEvent: number } }>(
+      response,
+    );
     expect(typeof body.harvest.considered).toBe("number");
     expect(typeof body.harvest.written).toBe("number");
+    expect(typeof body.harvest.withEvent).toBe("number");
   });
 
   it("POST /api/auth/login returns ok when DASHBOARD_PASSWORD is unset", async () => {

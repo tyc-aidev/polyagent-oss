@@ -1,7 +1,9 @@
-import type { MarketSnapshot } from "@polyagent/shared";
+import type { EventFeatureBag, MarketSnapshot } from "@polyagent/shared";
 import { getPrismaAsync } from "@/lib/db";
 import { getCacheStore } from "@/lib/polymarket/get-cache";
 import { GammaClient } from "@/lib/polymarket/gamma";
+import { computeMarketFeatures } from "./features";
+import { enrichMarketFeatures } from "./sources/registry";
 
 export const DEFAULT_HARVEST_TOP_N = 20;
 export const DEFAULT_HARVEST_MIN_INTERVAL_SECONDS = 240;
@@ -10,6 +12,7 @@ export const DEFAULT_SNAPSHOT_RETENTION_DAYS = 30;
 export interface HarvestResult {
   considered: number;
   written: number;
+  withEvent: number;
   skippedFresh: number;
   skippedResolved: number;
   pruned: number;
@@ -77,6 +80,7 @@ export async function harvestMarketSnapshots(
   const result: HarvestResult = {
     considered: 0,
     written: 0,
+    withEvent: 0,
     skippedFresh: 0,
     skippedResolved: 0,
     pruned: 0,
@@ -126,6 +130,7 @@ export async function harvestMarketSnapshots(
     noPrice: number;
     volume24h: number;
     capturedAt: Date;
+    event?: EventFeatureBag;
   }> = [];
 
   for (const marketId of marketIds) {
@@ -144,13 +149,16 @@ export async function harvestMarketSnapshots(
         result.skippedResolved += 1;
         continue;
       }
+      const event = await eventExtrasForMarket(market, now);
       toWrite.push({
         marketId: market.id,
         yesPrice: market.yesPrice,
         noPrice: market.noPrice,
         volume24h: market.volume24h,
         capturedAt: now,
+        event,
       });
+      if (event) result.withEvent += 1;
     } catch {
       result.errors += 1;
     }
@@ -170,4 +178,26 @@ export async function harvestMarketSnapshots(
   }
 
   return result;
+}
+
+export async function eventExtrasForMarket(
+  market: MarketSnapshot,
+  capturedAt: Date,
+): Promise<EventFeatureBag | undefined> {
+  const features = computeMarketFeatures([
+    {
+      marketId: market.id,
+      capturedAt,
+      yesPrice: market.yesPrice,
+      noPrice: market.noPrice,
+      volume24h: market.volume24h,
+    },
+  ]);
+  if (!features) return undefined;
+  try {
+    const enriched = await enrichMarketFeatures(market, features);
+    return enriched.event;
+  } catch {
+    return undefined;
+  }
 }
