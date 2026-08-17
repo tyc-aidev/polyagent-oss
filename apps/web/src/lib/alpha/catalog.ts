@@ -4,6 +4,7 @@ import type {
   AlphaSignal,
   MarketFeatures,
 } from "@polyagent/shared";
+import { numericEventExtras } from "./events";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -203,6 +204,41 @@ const extremeMispricing: AlphaDefinition = {
   defaultParameters: { low: 0.15, high: 0.85 },
 };
 
+const eventThreshold: AlphaDefinition = {
+  id: "event_threshold",
+  name: "Event-state threshold",
+  version: "1.0.0",
+  hypothesis:
+    "A numeric FeatureSource extra (score, break point, clock flag) crossing a threshold is a tradeable edge the book has not fully priced.",
+  description:
+    "HOLD when features.event is empty. Otherwise trade the first extra that clears `threshold` (booleans coerce to 0/1). side ≥ 0 buys YES; side < 0 buys NO. compare ≥ 0 means extra ≥ threshold.",
+  tags: ["event", "feature-source", "threshold"],
+  parameters: [
+    {
+      name: "threshold",
+      description: "Numeric extra must clear this level (true=1, false=0).",
+      minimum: -1_000_000,
+      maximum: 1_000_000,
+      defaultValue: 1,
+    },
+    {
+      name: "side",
+      description: "≥ 0 buys YES when the extra fires; < 0 buys NO.",
+      minimum: -1,
+      maximum: 1,
+      defaultValue: 1,
+    },
+    {
+      name: "compare",
+      description: "≥ 0 requires extra ≥ threshold; < 0 requires extra ≤ threshold.",
+      minimum: -1,
+      maximum: 1,
+      defaultValue: 1,
+    },
+  ],
+  defaultParameters: { threshold: 1, side: 1, compare: 1 },
+};
+
 const catalog: CatalogEntry[] = [
   {
     definition: thresholdYes,
@@ -367,6 +403,39 @@ const catalog: CatalogEntry[] = [
         );
       }
       return hold(extremeMispricing.id, features, "Price is not in an extreme band");
+    },
+  },
+  {
+    definition: eventThreshold,
+    evaluate: (features, params) => {
+      const threshold = readParam(eventThreshold, params, "threshold");
+      const side = readParam(eventThreshold, params, "side");
+      const compare = readParam(eventThreshold, params, "compare");
+      const extras = numericEventExtras(features);
+      if (extras.length === 0) {
+        return hold(eventThreshold.id, features, "No numeric features.event extras (source disabled or key missing)");
+      }
+      const hits = extras.filter((extra) => (compare >= 0 ? extra.value >= threshold : extra.value <= threshold));
+      const best = hits.sort((a, b) => Math.abs(b.value - threshold) - Math.abs(a.value - threshold))[0];
+      if (!best) {
+        return hold(
+          eventThreshold.id,
+          features,
+          `No extra cleared threshold ${threshold} (compare ${compare >= 0 ? ">=" : "<="})`,
+        );
+      }
+      const action: Exclude<AgentAction, "HOLD"> = side >= 0 ? "BUY_YES" : "BUY_NO";
+      const magnitude = Math.abs(best.value - threshold);
+      const confidence = clamp(magnitude / Math.max(Math.abs(threshold), 1), 0, 1);
+      const score = (action === "BUY_YES" ? 1 : -1) * Math.max(confidence, 0.1);
+      return trade(
+        eventThreshold.id,
+        features,
+        action,
+        score,
+        Math.max(confidence, 0.1),
+        `${best.source}.${best.key}=${best.value} ${compare >= 0 ? ">=" : "<="} ${threshold} → ${action}`,
+      );
     },
   },
 ];

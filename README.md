@@ -129,6 +129,8 @@ Agent loop: `GET /api/alphas` (hypotheses + playbook + sources) → `POST /api/a
 
 `GET /api/alphas` also lists registered **FeatureSources** (`sources: [{ id, enabled }]`). Price-derived features stay the default. Optional sources attach extras under `features.event[sourceId]` and must no-op when their env key is unset. Source failures never block harvest, ticks, or catalog evaluation.
 
+The `event_threshold` catalog alpha trades when a numeric extra in `features.event[source][key]` clears `threshold` (`true`→1, `false`→0). It HOLDs when the source is disabled or the key is missing. Sweep `threshold` / `side` / `compare` like any other catalog alpha.
+
 To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
 
 `GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`. `POST` accepts the same body as JSON.

@@ -19,6 +19,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Optional holdout / walk-forward split on `POST /api/backtests` and `/api/backtests/sweep` (`split.mode`) so agents can discard in-sample-only fits
 - Pluggable `FeatureSource` interface: env-gated extras on `features.event[sourceId]`; fixture source disabled by default; catalog lists `sources`
 - One-shot research compose (`POST /api/alphas/research`): scan the universe, sweep top-N candidates, return paper-bot promote payloads
+- `event_threshold` catalog alpha: trade when a numeric `features.event[source][key]` extra clears a threshold (HOLD if the source is off)
 
 ## [0.1.0] — 2026-06-15
 

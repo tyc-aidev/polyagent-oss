@@ -31,6 +31,7 @@ describe("alpha catalog", () => {
       "momentum",
       "volume_spike",
       "extreme_mispricing",
+      "event_threshold",
     ]);
   });
 
@@ -99,5 +100,35 @@ describe("alpha catalog", () => {
     if (holdIndex !== -1 && lastActive !== -1) {
       expect(lastActive).toBeLessThan(holdIndex);
     }
+  });
+
+  it("holds event_threshold when features.event is empty", () => {
+    const signal = evaluateAlpha("event_threshold", features());
+    expect(signal.action).toBe("HOLD");
+    expect(signal.reasoning).toMatch(/no numeric/i);
+  });
+
+  it("buys YES when a fixture extra clears the threshold", () => {
+    const signal = evaluateAlpha(
+      "event_threshold",
+      features({
+        event: { fixture: { favoriteDownBreak: true, set: 1 } },
+      }),
+      { threshold: 1, side: 1, compare: 1 },
+    );
+    expect(signal.action).toBe("BUY_YES");
+    expect(signal.reasoning).toMatch(/fixture\./);
+    expect(signal.confidence).toBeGreaterThan(0);
+  });
+
+  it("buys NO when side is negative and the extra is at or below threshold", () => {
+    const signal = evaluateAlpha(
+      "event_threshold",
+      features({
+        event: { tennis: { gamesBehind: 0 } },
+      }),
+      { threshold: 0, side: -1, compare: -1 },
+    );
+    expect(signal.action).toBe("BUY_NO");
   });
 });
