@@ -70,4 +70,29 @@ describe("createBacktest", () => {
     expect(report.winner?.parameters.buyYesBelow).toBe(0.35);
     expect(report.results[0]?.metrics.trades).toBeGreaterThan(0);
   });
+
+  it("attaches holdout in/out-of-sample metrics", async () => {
+    const prices = [0.2, 0.2, 0.2, 0.2, 0.5, 0.55, 0.55, 0.55];
+    const report = await createBacktest({
+      alphaId: "threshold_yes",
+      marketIds: ["m1"],
+      parameters: { buyYesBelow: 0.35 },
+      startingBalance: 10_000,
+      maxPositionSize: 50,
+      split: { mode: "holdout", trainFraction: 0.6 },
+      bars: prices.map((yesPrice, index) => ({
+        marketId: "m1",
+        capturedAt: new Date(Date.UTC(2026, 0, 1, 0, index * 5)),
+        yesPrice,
+        noPrice: 1 - yesPrice,
+        volume24h: 1_000,
+      })),
+    });
+
+    expect(report.metrics.ticks).toBe(8);
+    expect(report.split?.mode).toBe("holdout");
+    expect(report.split?.inSample.ticks).toBeGreaterThan(0);
+    expect(report.split?.outOfSample.ticks).toBeGreaterThan(0);
+    expect(report.limitations.some((line) => /out-of-sample/i.test(line))).toBe(true);
+  });
 });

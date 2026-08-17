@@ -93,6 +93,34 @@ export interface BacktestReport {
   equityCurve: BacktestEquityPoint[];
   trades: BacktestTrade[];
   limitations: string[];
+  split?: BacktestSplitReport;
+}
+
+export type BacktestSplitMode = "holdout" | "walk_forward";
+
+export interface BacktestSplitInput {
+  mode: BacktestSplitMode;
+  trainFraction?: number;
+  folds?: number;
+}
+
+export interface WalkForwardFold {
+  fold: number;
+  trainFrom: Date | null;
+  trainTo: Date | null;
+  testFrom: Date | null;
+  testTo: Date | null;
+  inSample: BacktestMetrics;
+  outOfSample: BacktestMetrics;
+}
+
+export interface BacktestSplitReport {
+  mode: BacktestSplitMode;
+  trainFraction: number;
+  folds?: number;
+  inSample: BacktestMetrics;
+  outOfSample: BacktestMetrics;
+  foldReports?: WalkForwardFold[];
 }
 
 export interface AlphaPlaybookStep {
@@ -131,6 +159,8 @@ export interface SweepComboResult {
   parameters: Record<string, number>;
   metrics: BacktestMetrics;
   score: number;
+  inSample?: BacktestMetrics;
+  outOfSample?: BacktestMetrics;
 }
 
 export interface SweepReport {
@@ -142,4 +172,5 @@ export interface SweepReport {
   winner: SweepComboResult | null;
   results: SweepComboResult[];
   limitations: string[];
+  split?: BacktestSplitReport;
 }

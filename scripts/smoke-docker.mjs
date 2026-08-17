@@ -273,6 +273,33 @@ async function main() {
     assert(Array.isArray(body?.results) && body.results.length === 2, "Sweep results missing");
   }
 
+  logStep("Holdout backtest split");
+  {
+    const prices = [0.2, 0.2, 0.2, 0.2, 0.55, 0.55, 0.55, 0.55];
+    const { status, body } = await api("/api/backtests", {
+      method: "POST",
+      body: JSON.stringify({
+        alphaId: "threshold_yes",
+        marketIds: [marketId],
+        parameters: { buyYesBelow: 0.35 },
+        startingBalance: 10_000,
+        maxPositionSize: 25,
+        split: { mode: "holdout", trainFraction: 0.6 },
+        bars: prices.map((yesPrice, index) => ({
+          marketId,
+          capturedAt: new Date(Date.UTC(2026, 0, 1, 0, index * 5)).toISOString(),
+          yesPrice,
+          noPrice: Number((1 - yesPrice).toFixed(4)),
+          volume24h: 1500,
+        })),
+      }),
+    });
+    assert(status === 201, `Holdout backtest failed (${status}): ${JSON.stringify(body)}`);
+    assert(body?.split?.mode === "holdout", "Missing holdout split");
+    assert(body?.split?.inSample?.ticks > 0, "Holdout in-sample ticks missing");
+    assert(body?.split?.outOfSample?.ticks > 0, "Holdout out-of-sample ticks missing");
+  }
+
   logStep("Cleanup smoke-test bot");
   {
     const { status } = await api(`/api/bots/${smokeBotId}`, {

@@ -16,6 +16,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Independent snapshot harvester: 5-minute cron samples top-N / bot / configured markets, dedupes by min interval, and prunes by retention (`POST /api/internal/harvest`)
 - Universe scan API (`GET`/`POST /api/alphas/scan`) ranks catalog signals across live or specified markets; `GET /api/alphas` now includes the research playbook
 - Parameter sweep (`POST /api/backtests/sweep`) grid-searches a catalog alpha (≤50 combos) and ranks in-sample Sharpe / P&L
+- Optional holdout / walk-forward split on `POST /api/backtests` and `/api/backtests/sweep` (`split.mode`) so agents can discard in-sample-only fits
 
 ## [0.1.0] — 2026-06-15
 

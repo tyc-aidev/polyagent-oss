@@ -118,4 +118,21 @@ describe("runSweep", () => {
   it("rejects an unknown alpha", () => {
     expect(() => runSweep({ alphaId: "missing", bars: bars([0.4]) })).toThrow(/not found/i);
   });
+
+  it("ranks a holdout sweep on out-of-sample metrics", () => {
+    const tape = bars([0.2, 0.2, 0.2, 0.2, 0.2, 0.55, 0.55, 0.55]);
+    const report = runSweep({
+      alphaId: "threshold_yes",
+      bars: tape,
+      grid: { buyYesBelow: [0.15, 0.35] },
+      split: { mode: "holdout", trainFraction: 0.6 },
+      startingBalance: 10_000,
+      maxPositionSize: 50,
+    });
+
+    expect(report.split?.mode).toBe("holdout");
+    expect(report.winner?.outOfSample).toBeDefined();
+    expect(report.winner?.metrics).toEqual(report.winner?.outOfSample);
+    expect(report.limitations.some((line) => /out-of-sample/i.test(line))).toBe(true);
+  });
 });

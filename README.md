@@ -128,7 +128,16 @@ Agent loop: `GET /api/alphas` (hypotheses + playbook) → `GET /api/alphas/scan`
 
 `POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
 
-`POST /api/backtests/sweep` searches `grid` (explicit values) or `steps` (linspace min→max). Omit both to auto-step each published parameter (capped at 50 combinations). Results are ranked by Sharpe, then P&L, then drawdown. Winning params are **in-sample** — re-run `POST /api/backtests` with `winner.parameters` for the full equity curve.
+Optional `split` on backtests and sweeps:
+
+```json
+{ "split": { "mode": "holdout", "trainFraction": 0.7 } }
+{ "split": { "mode": "walk_forward", "folds": 3 } }
+```
+
+Holdout cuts the unique-timestamp tape 70/30 (configurable 0.5–0.9). Walk-forward uses an expanding train window and reports per-fold plus aggregated OOS metrics. Test windows use earlier bars only as feature warmup (`evaluateFrom`); the paper book restarts at each test window. Full-tape `metrics` stay on the report for backward compatibility. Even OOS on a harvested tape is not live trading.
+
+`POST /api/backtests/sweep` searches `grid` (explicit values) or `steps` (linspace min→max). Omit both to auto-step each published parameter (capped at 50 combinations). Results are ranked by Sharpe, then P&L, then drawdown. Pass `split` to rank on **out-of-sample** metrics; otherwise ranking is in-sample. Re-run `POST /api/backtests` with `winner.parameters` for the full equity curve.
 
 Create a live paper bot with the same evaluator:
 

@@ -7,6 +7,7 @@ import type {
 } from "@polyagent/shared";
 import { runBacktest } from "@/lib/alpha/backtest";
 import { getAlpha } from "@/lib/alpha/catalog";
+import { computeSplitReport, SPLIT_LIMITATIONS } from "@/lib/alpha/split";
 import { runSweep } from "@/lib/alpha/sweep";
 import { listHistoryForMarkets, toPriceBar } from "@/lib/alpha/snapshots";
 
@@ -41,7 +42,7 @@ export async function createBacktest(input: RunBacktestInput): Promise<BacktestR
   }
 
   const bars = await loadBacktestBars(input);
-  return runBacktest({
+  const report = runBacktest({
     alphaId: input.alphaId,
     parameters: input.parameters,
     bars,
@@ -50,6 +51,27 @@ export async function createBacktest(input: RunBacktestInput): Promise<BacktestR
     confidenceThreshold: input.confidenceThreshold,
     lookback: input.lookback,
   });
+
+  if (!input.split) return report;
+
+  const split = computeSplitReport(
+    {
+      alphaId: input.alphaId,
+      parameters: input.parameters,
+      bars,
+      startingBalance: input.startingBalance,
+      maxPositionSize: input.maxPositionSize,
+      confidenceThreshold: input.confidenceThreshold,
+      lookback: input.lookback,
+    },
+    input.split,
+  );
+
+  return {
+    ...report,
+    split,
+    limitations: [...report.limitations, ...SPLIT_LIMITATIONS],
+  };
 }
 
 export async function createSweep(input: SweepBacktestInput): Promise<SweepReport> {
@@ -67,5 +89,6 @@ export async function createSweep(input: SweepBacktestInput): Promise<SweepRepor
     maxPositionSize: input.maxPositionSize,
     confidenceThreshold: input.confidenceThreshold,
     lookback: input.lookback,
+    split: input.split,
   });
 }

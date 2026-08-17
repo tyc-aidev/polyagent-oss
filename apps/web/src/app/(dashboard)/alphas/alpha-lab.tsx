@@ -60,6 +60,11 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
   const [signals, setSignals] = useState<SignalsResponse | null>(null);
   const [scan, setScan] = useState<AlphaScanReport | null>(null);
   const [sweep, setSweep] = useState<SweepReport | null>(null);
+  const [splitMode, setSplitMode] = useState<"" | "holdout" | "walk_forward">("");
+
+  function splitPayload(): { mode: "holdout" | "walk_forward" } | undefined {
+    return splitMode === "" ? undefined : { mode: splitMode };
+  }
 
   function mergedParameters(): Record<string, number> | undefined {
     if (!selected) return undefined;
@@ -103,6 +108,7 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
           startingBalance: Number(startingBalance) || 10_000,
           maxPositionSize: Number(maxPositionSize) || 100,
           bars: parseInlineBars(),
+          split: splitPayload(),
         }),
       });
       const body = (await response.json()) as BacktestReport & { error?: string };
@@ -137,6 +143,7 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
           startingBalance: Number(startingBalance) || 10_000,
           maxPositionSize: Number(maxPositionSize) || 100,
           bars: parseInlineBars(),
+          split: splitPayload(),
         }),
       });
       const body = (await response.json()) as SweepReport & { error?: string };
@@ -210,7 +217,7 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
       <Card>
         <CardTitle>Agent playbook</CardTitle>
         <CardDescription>
-          Catalog → scan universe → backtest → sweep parameters → paper bot.
+          Catalog → scan universe → backtest / OOS split → sweep parameters → paper bot.
         </CardDescription>
         <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>
@@ -377,6 +384,21 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
                 placeholder='[{"marketId":"m1","capturedAt":"2026-01-01T00:00:00.000Z","yesPrice":0.4,"noPrice":0.6,"volume24h":1000}]'
                 className="flex min-h-[8rem] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               />
+            </div>
+            <div>
+              <Label htmlFor="split-mode">Validation split</Label>
+              <select
+                id="split-mode"
+                value={splitMode}
+                onChange={(event) =>
+                  setSplitMode(event.target.value as "" | "holdout" | "walk_forward")
+                }
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                <option value="">None (full tape, in-sample)</option>
+                <option value="holdout">Holdout (70/30)</option>
+                <option value="walk_forward">Walk-forward (3 folds)</option>
+              </select>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="button" onClick={() => void runBacktest()} disabled={busy !== null}>
@@ -582,6 +604,36 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
               </p>
             </Card>
           </div>
+
+          {report.split && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Card>
+                <p className="text-xs text-muted-foreground">
+                  In-sample P&amp;L ({report.split.mode})
+                </p>
+                <p className="mt-1 text-xl font-semibold">
+                  {formatUsd(report.split.inSample.totalPnl)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {report.split.inSample.trades} trades · hit{" "}
+                  {(report.split.inSample.hitRate * 100).toFixed(0)}%
+                </p>
+              </Card>
+              <Card>
+                <p className="text-xs text-muted-foreground">Out-of-sample P&amp;L</p>
+                <p className="mt-1 text-xl font-semibold">
+                  {formatUsd(report.split.outOfSample.totalPnl)}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {report.split.outOfSample.trades} trades · hit{" "}
+                  {(report.split.outOfSample.hitRate * 100).toFixed(0)}%
+                  {report.split.foldReports
+                    ? ` · ${report.split.foldReports.length} folds`
+                    : ""}
+                </p>
+              </Card>
+            </div>
+          )}
 
           <Card>
             <CardTitle>Equity curve</CardTitle>
