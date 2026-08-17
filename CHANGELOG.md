@@ -23,6 +23,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Optional `event` extras on price bars (inline backtests and imported snapshots) so `event_threshold` can be replayed
 - Snapshot harvester persists FeatureSource extras on `MarketPriceSnapshot.event` when a source is enabled (`withEvent` in the harvest result)
 - Live mids no longer drop harvested `event` extras; scan/research accept `hasEvent=true` to find markets with an event tape
+- `GET /api/alphas/tapes` inventories stored harvest/import tapes (bar counts, `hasEvent`, event source ids)
 
 ## [0.1.0] — 2026-06-15
 

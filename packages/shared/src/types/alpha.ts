@@ -163,6 +163,20 @@ export interface AlphaPlaybookStep {
   purpose: string;
 }
 
+export interface MarketTapeSummary {
+  marketId: string;
+  bars: number;
+  from: Date | null;
+  to: Date | null;
+  hasEvent: boolean;
+  eventSources: string[];
+}
+
+export interface MarketTapeReport {
+  tapes: MarketTapeSummary[];
+  limitations: string[];
+}
+
 export interface AlphaOpportunity {
   marketId: string;
   question: string;
