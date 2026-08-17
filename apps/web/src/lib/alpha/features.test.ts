@@ -88,4 +88,20 @@ describe("computeMarketFeatures", () => {
     ]);
     expect(features?.event?.fixture?.favoriteDownBreak).toBe(true);
   });
+
+  it("carries a harvested event onto a live mid that has none", () => {
+    const features = computeMarketFeatures([
+      bar({
+        yesPrice: 0.4,
+        capturedAt: new Date("2026-01-01T00:00:00.000Z"),
+        event: { fixture: { favoriteDownBreak: true } },
+      }),
+      bar({
+        yesPrice: 0.41,
+        capturedAt: new Date("2026-01-01T00:05:00.000Z"),
+      }),
+    ]);
+    expect(features?.yesPrice).toBeCloseTo(0.41);
+    expect(features?.event?.fixture?.favoriteDownBreak).toBe(true);
+  });
 });

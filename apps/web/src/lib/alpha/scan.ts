@@ -9,6 +9,7 @@ import type {
 } from "@polyagent/shared";
 import { evaluateAlpha, getAlpha, listAlphas } from "./catalog";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK } from "./features";
+import { hasEventExtras } from "./events";
 import { SCAN_LIMITATIONS } from "./playbook";
 import { enrichMarketFeatures } from "./sources/registry";
 
@@ -66,12 +67,14 @@ export async function collectOpportunities(
     lookback?: number;
     limit?: number;
     includeHolds?: boolean;
+    hasEvent?: boolean;
   } = {},
 ): Promise<AlphaScanReport> {
   const lookback = options.lookback ?? DEFAULT_FEATURE_LOOKBACK;
   const resultLimit = options.limit ?? DEFAULT_SCAN_LIMIT;
   const includeHolds = options.includeHolds ?? false;
   const minConfidence = options.minConfidence ?? 0;
+  const requireEvent = options.hasEvent ?? false;
   const alphaIds = resolveScanAlphaIds(options.alphaIds);
 
   const opportunities: AlphaOpportunity[] = [];
@@ -88,6 +91,10 @@ export async function collectOpportunities(
       continue;
     }
     const features = await enrichMarketFeatures(market, computed);
+    if (requireEvent && !hasEventExtras(features.event)) {
+      skipped += 1;
+      continue;
+    }
     opportunities.push(
       ...signalsForFeatures(market, features, alphaIds, {
         includeHolds,
@@ -165,6 +172,7 @@ export function parseScanQuery(searchParams: URLSearchParams): ScanAlphasInput {
   };
 
   const includeHoldsRaw = searchParams.get("includeHolds");
+  const hasEventRaw = searchParams.get("hasEvent");
   const action = searchParams.get("action");
   const singleAlpha = searchParams.get("alphaId")?.trim();
   const alphaIds = csv("alphaIds") ?? (singleAlpha ? [singleAlpha] : undefined);
@@ -184,5 +192,9 @@ export function parseScanQuery(searchParams: URLSearchParams): ScanAlphasInput {
       includeHoldsRaw === null
         ? undefined
         : includeHoldsRaw === "1" || includeHoldsRaw.toLowerCase() === "true",
+    hasEvent:
+      hasEventRaw === null
+        ? undefined
+        : hasEventRaw === "1" || hasEventRaw.toLowerCase() === "true",
   };
 }

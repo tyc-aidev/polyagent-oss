@@ -115,6 +115,7 @@ describe("scanAlphasSchema", () => {
       lookback: 8,
       limit: 10,
       includeHolds: false,
+      hasEvent: true,
     });
     expect(result.success).toBe(true);
   });

@@ -154,7 +154,7 @@ The 5-minute harvester attaches enabled FeatureSource extras to each new snapsho
 
 To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
 
-`GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`. `POST` accepts the same body as JSON.
+`GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`, `hasEvent`. A live Gamma mid does not erase harvested `event` extras — features carry the most recent tape bag forward. `POST` accepts the same body as JSON.
 
 `POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
 

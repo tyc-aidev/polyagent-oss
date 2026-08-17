@@ -18,7 +18,7 @@ export const ALPHA_RESEARCH_PLAYBOOK: AlphaPlaybookStep[] = [
     step: 3,
     method: "GET",
     path: "/api/alphas/scan",
-    purpose: "Rank live catalog signals across the market universe",
+    purpose: "Rank live catalog signals; hasEvent=true keeps markets with an event tape",
   },
   {
     step: 4,
@@ -50,6 +50,7 @@ export const SCAN_LIMITATIONS = [
   "Scan ranks the current catalog on the latest mid (live Gamma when available, else last stored bar).",
   "Features use harvested or imported snapshots plus that last mid. Thin tapes make momentum/volume-z null.",
   "HOLD signals are omitted unless includeHolds=true. Rank is confidence × |score|.",
+  "hasEvent=true skips markets whose features.event bag is empty after carry-forward + live enrich.",
   "A live signal is not a backtest. Confirm with POST /api/backtests before promoting to a bot.",
   "Paper trading only. Not financial advice and not a live execution path.",
 ] as const;

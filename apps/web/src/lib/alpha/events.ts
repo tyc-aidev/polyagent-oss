@@ -1,4 +1,4 @@
-import type { EventFeatureValue, MarketFeatures } from "@polyagent/shared";
+import type { EventFeatureBag, EventFeatureValue, MarketFeatures, PriceBar } from "@polyagent/shared";
 
 export interface NumericEventExtra {
   source: string;
@@ -26,4 +26,18 @@ export function numericEventExtras(features: MarketFeatures): NumericEventExtra[
     }
   }
   return extras;
+}
+
+export function hasEventExtras(event: EventFeatureBag | undefined): boolean {
+  if (!event) return false;
+  return Object.values(event).some((bag) => bag && Object.keys(bag).length > 0);
+}
+
+/** Most recent non-empty event bag on the tape (walks backward). */
+export function latestEvent(bars: PriceBar[]): EventFeatureBag | undefined {
+  for (let i = bars.length - 1; i >= 0; i -= 1) {
+    const event = bars[i]?.event;
+    if (hasEventExtras(event)) return event;
+  }
+  return undefined;
 }

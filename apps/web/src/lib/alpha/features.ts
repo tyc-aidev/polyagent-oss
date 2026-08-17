@@ -1,4 +1,5 @@
 import type { MarketFeatures, PriceBar } from "@polyagent/shared";
+import { latestEvent } from "./events";
 
 export const DEFAULT_FEATURE_LOOKBACK = 5;
 
@@ -66,6 +67,6 @@ export function computeMarketFeatures(
     distanceFromFair: last.yesPrice - 0.5,
     meanReversionResidual: yesPrices.length >= 2 ? last.yesPrice - sma : null,
     sampleSize: sorted.length,
-    event: last.event,
+    event: last.event ?? latestEvent(sorted.slice(0, -1)),
   };
 }

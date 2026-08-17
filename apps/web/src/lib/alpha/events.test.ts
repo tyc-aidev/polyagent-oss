@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MarketFeatures } from "@polyagent/shared";
-import { coerceEventNumber, numericEventExtras } from "./events";
+import { coerceEventNumber, hasEventExtras, latestEvent, numericEventExtras } from "./events";
 
 const base: MarketFeatures = {
   marketId: "m1",
@@ -42,5 +42,30 @@ describe("numericEventExtras", () => {
       { source: "fixture", key: "favoriteDownBreak", value: 1 },
       { source: "tennis", key: "set", value: 2 },
     ]);
+  });
+});
+
+describe("latestEvent", () => {
+  it("walks backward past a live bar with no extras", () => {
+    const event = latestEvent([
+      {
+        marketId: "m1",
+        capturedAt: new Date("2026-01-01T00:00:00.000Z"),
+        yesPrice: 0.4,
+        noPrice: 0.6,
+        volume24h: 1,
+        event: { fixture: { set: 1 } },
+      },
+      {
+        marketId: "m1",
+        capturedAt: new Date("2026-01-01T00:05:00.000Z"),
+        yesPrice: 0.41,
+        noPrice: 0.59,
+        volume24h: 1,
+      },
+    ]);
+    expect(event).toEqual({ fixture: { set: 1 } });
+    expect(hasEventExtras(event)).toBe(true);
+    expect(hasEventExtras(undefined)).toBe(false);
   });
 });
