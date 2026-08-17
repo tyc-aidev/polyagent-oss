@@ -3,6 +3,7 @@ import type {
   AlphaPlaybookStep,
   AlphaScanReport,
   AlphaSignal,
+  FeatureSourceStatus,
   MarketFeatures,
   MarketSnapshot,
   PriceBar,
@@ -11,6 +12,7 @@ import type {
 import { evaluateCatalog, getAlpha, listAlphas } from "@/lib/alpha/catalog";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK } from "@/lib/alpha/features";
 import { ALPHA_RESEARCH_PLAYBOOK } from "@/lib/alpha/playbook";
+import { enrichMarketFeatures, listFeatureSources } from "@/lib/alpha/sources/registry";
 import {
   collectOpportunities,
   DEFAULT_SCAN_UNIVERSE,
@@ -26,6 +28,10 @@ export function listAlphaCatalog(): AlphaDefinition[] {
 
 export function getAlphaResearchPlaybook(): AlphaPlaybookStep[] {
   return ALPHA_RESEARCH_PLAYBOOK;
+}
+
+export function listAlphaFeatureSources(): FeatureSourceStatus[] {
+  return listFeatureSources();
 }
 
 export function getAlphaDefinition(id: string): AlphaDefinition {
@@ -50,12 +56,18 @@ export async function getMarketFeatures(
   marketId: string,
   lookback = DEFAULT_FEATURE_LOOKBACK,
   includeLive = true,
-): Promise<{ features: MarketFeatures; live: boolean; historySize: number }> {
+): Promise<{
+  features: MarketFeatures;
+  live: boolean;
+  historySize: number;
+  sources: FeatureSourceStatus[];
+}> {
   const history = await listMarketHistory(marketId, { limit: Math.max(lookback + 1, 50) });
   let live = false;
+  let market: MarketSnapshot | null = null;
 
   if (includeLive) {
-    const market = await getMarket(marketId);
+    market = await getMarket(marketId);
     if (market) {
       history.push(liveBarFromSnapshot(market));
       live = true;
@@ -67,19 +79,42 @@ export async function getMarketFeatures(
     throw new Error(`No price history for market ${marketId}`);
   }
 
-  return { features, live, historySize: history.length };
+  const snapshot =
+    market ??
+    (history[history.length - 1]
+      ? {
+          id: marketId,
+          slug: marketId,
+          question: marketId,
+          endDate: undefined,
+        }
+      : null);
+
+  return {
+    features: await enrichMarketFeatures(snapshot, features),
+    live,
+    historySize: history.length,
+    sources: listFeatureSources(),
+  };
 }
 
 export async function getMarketSignals(
   marketId: string,
   lookback = DEFAULT_FEATURE_LOOKBACK,
-): Promise<{ features: MarketFeatures; signals: AlphaSignal[]; live: boolean; historySize: number }> {
-  const { features, live, historySize } = await getMarketFeatures(marketId, lookback, true);
+): Promise<{
+  features: MarketFeatures;
+  signals: AlphaSignal[];
+  live: boolean;
+  historySize: number;
+  sources: FeatureSourceStatus[];
+}> {
+  const { features, live, historySize, sources } = await getMarketFeatures(marketId, lookback, true);
   return {
     features,
     signals: evaluateCatalog(features),
     live,
     historySize,
+    sources,
   };
 }
 

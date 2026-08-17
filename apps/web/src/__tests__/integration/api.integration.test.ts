@@ -190,10 +190,14 @@ describeIfDb("API integration (real database)", () => {
     const body = await readJson<{
       alphas: Array<{ id: string; hypothesis: string }>;
       playbook: Array<{ path: string }>;
+      sources: Array<{ id: string; enabled: boolean }>;
     }>(response);
     expect(body.alphas.length).toBeGreaterThanOrEqual(6);
     expect(body.alphas.every((alpha) => alpha.hypothesis.length > 0)).toBe(true);
     expect(body.playbook.some((step) => step.path === "/api/alphas/scan")).toBe(true);
+    expect(body.sources.some((source) => source.id === "fixture" && source.enabled === false)).toBe(
+      true,
+    );
   });
 
   it("POST /api/alphas/scan ranks imported history without live Gamma", async () => {

@@ -44,8 +44,8 @@ describe("resolveScanAlphaIds", () => {
 });
 
 describe("collectOpportunities", () => {
-  it("ranks cheap YES markets onto threshold_yes", () => {
-    const report = collectOpportunities(
+  it("ranks cheap YES markets onto threshold_yes", async () => {
+    const report = await collectOpportunities(
       [
         {
           market: market("cheap"),
@@ -68,8 +68,8 @@ describe("collectOpportunities", () => {
     expect(report.limitations.length).toBeGreaterThan(0);
   });
 
-  it("skips resolved markets and can include HOLDs", () => {
-    const report = collectOpportunities(
+  it("skips resolved markets and can include HOLDs", async () => {
+    const report = await collectOpportunities(
       [
         {
           market: market("done", { resolved: true }),
@@ -88,8 +88,8 @@ describe("collectOpportunities", () => {
     expect(report.opportunities[0]?.action).toBe("HOLD");
   });
 
-  it("filters by action and respects limit", () => {
-    const report = collectOpportunities(
+  it("filters by action and respects limit", async () => {
+    const report = await collectOpportunities(
       [
         {
           market: market("a"),

@@ -10,6 +10,7 @@ import type {
 import { evaluateAlpha, getAlpha, listAlphas } from "./catalog";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK } from "./features";
 import { SCAN_LIMITATIONS } from "./playbook";
+import { enrichMarketFeatures } from "./sources/registry";
 
 export const DEFAULT_SCAN_LIMIT = 20;
 export const DEFAULT_SCAN_UNIVERSE = 20;
@@ -56,7 +57,7 @@ function compareOpportunities(a: AlphaOpportunity, b: AlphaOpportunity): number 
   return b.confidence - a.confidence;
 }
 
-export function collectOpportunities(
+export async function collectOpportunities(
   inputs: ScanMarketInput[],
   options: {
     alphaIds?: string[];
@@ -66,7 +67,7 @@ export function collectOpportunities(
     limit?: number;
     includeHolds?: boolean;
   } = {},
-): AlphaScanReport {
+): Promise<AlphaScanReport> {
   const lookback = options.lookback ?? DEFAULT_FEATURE_LOOKBACK;
   const resultLimit = options.limit ?? DEFAULT_SCAN_LIMIT;
   const includeHolds = options.includeHolds ?? false;
@@ -81,11 +82,12 @@ export function collectOpportunities(
       skipped += 1;
       continue;
     }
-    const features = computeMarketFeatures(bars, lookback);
-    if (!features) {
+    const computed = computeMarketFeatures(bars, lookback);
+    if (!computed) {
       skipped += 1;
       continue;
     }
+    const features = await enrichMarketFeatures(market, computed);
     opportunities.push(
       ...signalsForFeatures(market, features, alphaIds, {
         includeHolds,
