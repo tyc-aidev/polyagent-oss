@@ -205,3 +205,26 @@ export interface SweepReport {
   limitations: string[];
   split?: BacktestSplitReport;
 }
+
+export interface AlphaPromoteStrategy {
+  type: "alpha";
+  alphaId: string;
+  parameters: Record<string, number>;
+}
+
+export interface AlphaResearchCandidate {
+  marketId: string;
+  question: string;
+  alphaId: string;
+  alphaName: string;
+  liveSignal: AlphaOpportunity;
+  sweep: SweepReport | null;
+  skippedReason?: string;
+  promote: { strategy: AlphaPromoteStrategy };
+}
+
+export interface AlphaResearchReport {
+  scan: AlphaScanReport;
+  candidates: AlphaResearchCandidate[];
+  limitations: string[];
+}

@@ -1,17 +1,26 @@
 import type {
   AlphaDefinition,
   AlphaPlaybookStep,
+  AlphaResearchReport,
   AlphaScanReport,
   AlphaSignal,
   FeatureSourceStatus,
   MarketFeatures,
   MarketSnapshot,
   PriceBar,
+  ResearchAlphasInput,
   ScanAlphasInput,
 } from "@polyagent/shared";
 import { evaluateCatalog, getAlpha, listAlphas } from "@/lib/alpha/catalog";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK } from "@/lib/alpha/features";
 import { ALPHA_RESEARCH_PLAYBOOK } from "@/lib/alpha/playbook";
+import {
+  assembleResearchReport,
+  DEFAULT_RESEARCH_UNIVERSE,
+  fallbackOpportunities,
+  researchCandidatesFromTape,
+  researchTop,
+} from "@/lib/alpha/research";
 import { enrichMarketFeatures, listFeatureSources } from "@/lib/alpha/sources/registry";
 import {
   collectOpportunities,
@@ -179,4 +188,36 @@ export async function scanAlphaOpportunities(input: ScanAlphasInput): Promise<Al
     limit: input.limit,
     includeHolds: input.includeHolds,
   });
+}
+
+export async function runAlphaResearch(input: ResearchAlphasInput): Promise<AlphaResearchReport> {
+  const top = researchTop(input);
+  const scan = await scanAlphaOpportunities({
+    marketIds: input.marketIds,
+    alphaIds: input.alphaIds,
+    minConfidence: input.minConfidence,
+    action: input.action,
+    lookback: input.lookback,
+    universeLimit: input.universeLimit ?? DEFAULT_RESEARCH_UNIVERSE,
+    limit: Math.max(top, 10),
+    includeHolds: false,
+  });
+
+  const liveHits = scan.opportunities.slice(0, top);
+  const picked =
+    liveHits.length > 0
+      ? liveHits
+      : fallbackOpportunities(input.marketIds ?? [], input.alphaIds, top);
+  const marketIds = [...new Set(picked.map((item) => item.marketId))];
+  const history = await listHistoryForMarkets(marketIds, { limit: 2_000 });
+  const barsByMarket = groupBars(history);
+  const candidates = researchCandidatesFromTape(picked, barsByMarket, {
+    startingBalance: input.startingBalance,
+    maxPositionSize: input.maxPositionSize,
+    lookback: input.lookback,
+    steps: input.steps,
+    split: input.split,
+  });
+
+  return assembleResearchReport(scan, candidates);
 }

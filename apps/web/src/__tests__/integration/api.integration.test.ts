@@ -13,6 +13,7 @@ import { POST as harvestPost } from "@/app/api/internal/harvest/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { GET as alphasGet } from "@/app/api/alphas/route";
 import { POST as alphasScanPost } from "@/app/api/alphas/scan/route";
+import { POST as researchPost } from "@/app/api/alphas/research/route";
 import { POST as historyPost } from "@/app/api/markets/[id]/history/route";
 import { POST as backtestsPost } from "@/app/api/backtests/route";
 import { POST as sweepPost } from "@/app/api/backtests/sweep/route";
@@ -238,6 +239,49 @@ describeIfDb("API integration (real database)", () => {
     expect(body.opportunities[0]?.marketId).toBe(marketId);
     expect(body.opportunities[0]?.alphaId).toBe("threshold_yes");
     expect(body.opportunities[0]?.action).toBe("BUY_YES");
+  });
+
+  it("POST /api/alphas/research composes scan + sweep on imported history", async () => {
+    const marketId = `research-test-${Date.now()}`;
+    const imported = await historyPost(
+      jsonRequest(`http://test/api/markets/${marketId}/history`, {
+        method: "POST",
+        body: JSON.stringify({
+          bars: [0.18, 0.2, 0.55].map((yesPrice, index) => ({
+            capturedAt: new Date(Date.UTC(2026, 0, 1, 0, index * 5)).toISOString(),
+            yesPrice,
+            noPrice: Number((1 - yesPrice).toFixed(4)),
+            volume24h: 2_500,
+          })),
+        }),
+      }),
+      { params: Promise.resolve({ id: marketId }) },
+    );
+    expect(imported.status).toBe(201);
+
+    const response = await researchPost(
+      jsonRequest("http://test/api/alphas/research", {
+        method: "POST",
+        body: JSON.stringify({
+          marketIds: [marketId],
+          alphaIds: ["threshold_yes"],
+          top: 1,
+          steps: 2,
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await readJson<{
+      candidates: Array<{
+        marketId: string;
+        sweep: { winner: { parameters: Record<string, number> } } | null;
+        promote: { strategy: { type: string; alphaId: string } };
+      }>;
+    }>(response);
+    expect(body.candidates[0]?.marketId).toBe(marketId);
+    expect(body.candidates[0]?.promote.strategy.type).toBe("alpha");
+    expect(body.candidates[0]?.promote.strategy.alphaId).toBe("threshold_yes");
+    expect(body.candidates[0]?.sweep?.winner).toBeTruthy();
   });
 
   it("POST /api/bots accepts a catalog alpha strategy", async () => {

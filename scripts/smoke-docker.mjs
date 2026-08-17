@@ -209,6 +209,23 @@ async function main() {
     assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Scan missing limitations");
   }
 
+  logStep("One-shot research compose");
+  {
+    const { status, body } = await api("/api/alphas/research", {
+      method: "POST",
+      body: JSON.stringify({
+        marketIds: [marketId],
+        alphaIds: ["threshold_yes"],
+        top: 1,
+        steps: 2,
+      }),
+    });
+    assert(status === 201, `Research returned ${status}: ${JSON.stringify(body)}`);
+    assert(Array.isArray(body?.candidates), "Research missing candidates");
+    assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Research missing limitations");
+    assert(body?.candidates[0]?.promote?.strategy?.type === "alpha", "Research promote payload missing");
+  }
+
   logStep("Inline-bar backtest");
   {
     const { status, body } = await api("/api/backtests", {

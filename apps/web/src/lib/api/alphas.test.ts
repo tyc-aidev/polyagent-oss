@@ -31,6 +31,7 @@ describe("alpha catalog API helpers", () => {
     const playbook = getAlphaResearchPlaybook();
     expect(playbook.map((step) => step.path)).toEqual([
       "/api/alphas",
+      "/api/alphas/research",
       "/api/alphas/scan",
       "/api/markets/:id/features",
       "/api/backtests",

@@ -66,8 +66,23 @@ export const sweepBacktestSchema = z
     message: "from must be before or equal to to",
   });
 
+export const researchAlphasSchema = z.object({
+  marketIds: z.array(z.string().min(1)).max(20).optional(),
+  alphaIds: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
+  minConfidence: z.number().min(0).max(1).optional(),
+  action: z.enum(["BUY_YES", "BUY_NO", "HOLD", "SELL"]).optional(),
+  lookback: z.number().int().min(1).max(100).optional(),
+  universeLimit: z.number().int().min(1).max(20).optional(),
+  top: z.number().int().min(1).max(5).optional(),
+  startingBalance: z.number().positive().max(10_000_000).optional(),
+  maxPositionSize: z.number().positive().max(1_000_000).optional(),
+  steps: z.number().int().min(1).max(5).optional(),
+  split: backtestSplitSchema.optional(),
+});
+
 export type PriceBarInput = z.infer<typeof priceBarInputSchema>;
 export type ImportHistoryInput = z.infer<typeof importHistorySchema>;
 export type RunBacktestInput = z.infer<typeof runBacktestSchema>;
 export type ScanAlphasInput = z.infer<typeof scanAlphasSchema>;
 export type SweepBacktestInput = z.infer<typeof sweepBacktestSchema>;
+export type ResearchAlphasInput = z.infer<typeof researchAlphasSchema>;

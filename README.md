@@ -116,6 +116,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas + research playbook + FeatureSources |
 | `GET` | `/api/alphas/:id` | Single alpha definition |
 | `GET`/`POST` | `/api/alphas/scan` | Rank catalog signals across the live (or specified) universe |
+| `POST` | `/api/alphas/research` | One-shot scan + sweep (+ optional OOS); returns promote payloads |
 | `GET` | `/api/markets/:id/history` | Stored `MarketPriceSnapshot` bars |
 | `POST` | `/api/markets/:id/history` | Import agent-supplied bars |
 | `GET` | `/api/markets/:id/features` | Momentum, residual, volume z-score, … |
@@ -124,7 +125,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `POST` | `/api/backtests/sweep` | Grid-search a catalog alpha's parameters (≤50 combos) |
 | `POST` | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` (`CRON_SECRET`) |
 
-Agent loop: `GET /api/alphas` (hypotheses + playbook) → `GET /api/alphas/scan` (where the catalog is firing) → `POST /api/backtests` (replay a candidate) → `POST /api/backtests/sweep` (search published parameter space) → `POST /api/bots` with `strategy.type=alpha`.
+Agent loop: `GET /api/alphas` (hypotheses + playbook + sources) → `POST /api/alphas/research` (scan + sweep in one call) → `POST /api/bots` with the returned `promote.strategy`. Individual steps (`/scan`, `/backtests`, `/backtests/sweep`) remain available.
 
 `GET /api/alphas` also lists registered **FeatureSources** (`sources: [{ id, enabled }]`). Price-derived features stay the default. Optional sources attach extras under `features.event[sourceId]` and must no-op when their env key is unset. Source failures never block harvest, ticks, or catalog evaluation.
 
