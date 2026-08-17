@@ -82,6 +82,7 @@ async function main() {
       body?.mode === "cloudflare-queue" || body?.mode === "direct",
       "Unexpected scheduler mode",
     );
+    assert(body?.harvest && typeof body.harvest.considered === "number", "Cron missing harvest");
   }
 
   await loginIfNeeded();

@@ -55,6 +55,11 @@ The web service runs at [http://localhost:3000](http://localhost:3000) with an i
 | `MARKET_CACHE_TTL_SECONDS` | `60` | Gamma response cache TTL |
 | `SCHEDULER_MODE` | `docker` | `docker` (in-process) or `cloudflare` (Cron + Queue) |
 | `MAX_ACTIVE_BOTS` | `10` | Max concurrently active bots |
+| `SNAPSHOT_HARVEST_ENABLED` | `true` | Sample Gamma markets on the 5‑minute scheduler |
+| `SNAPSHOT_HARVEST_TOP_N` | `20` | Top active Gamma markets to snapshot (0–50) |
+| `SNAPSHOT_HARVEST_MARKET_IDS` | — | Extra market IDs to always sample (comma-separated) |
+| `SNAPSHOT_HARVEST_MIN_INTERVAL_SECONDS` | `240` | Skip a market if a snapshot is newer than this |
+| `SNAPSHOT_RETENTION_DAYS` | `30` | Delete snapshots older than this (0 disables prune) |
 | `DASHBOARD_PASSWORD` | — | Optional password gate for public deploys |
 | `SESSION_SECRET` | — | HMAC secret for signed session cookies (falls back to `DASHBOARD_PASSWORD`) |
 | `CRON_SECRET` | — | Required in production for `/api/internal/*` scheduler routes |
@@ -113,6 +118,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `GET` | `/api/markets/:id/features` | Momentum, residual, volume z-score, … |
 | `GET` | `/api/markets/:id/signals` | Ranked catalog evaluation on a market |
 | `POST` | `/api/backtests` | Replay paper simulator on stored or inline bars |
+| `POST` | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` (`CRON_SECRET`) |
 
 `POST /api/backtests` accepts optional `bars` so an agent can evaluate an alpha on a tape it already holds. If `bars` is omitted, the engine reads snapshots captured during bot ticks (or imported history). Mid-price fills, no book, no slippage — the report always includes data-sourcing limitations.
 
@@ -125,6 +131,8 @@ Create a live paper bot with the same evaluator:
 ```
 
 Threshold configs (`strategy.type = "threshold"`) are unchanged.
+
+The 5-minute scheduler also harvests top-N Gamma markets plus any markets on non-archived bots. Cadence defaults to one row per market per ~4 minutes; rows older than 30 days are pruned. At defaults that is about `20 markets × 12/hour × 24 × 30 ≈ 170k` rows/month (~tens of MB). Disable with `SNAPSHOT_HARVEST_ENABLED=false` or seed a tape via `POST /api/markets/:id/history`.
 
 ## Security
 

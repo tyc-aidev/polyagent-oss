@@ -9,6 +9,7 @@ import { GET as healthGet } from "@/app/api/health/route";
 import { GET as botsGet, POST as botsPost } from "@/app/api/bots/route";
 import { GET as botGet, PATCH as botPatch, DELETE as botDelete } from "@/app/api/bots/[id]/route";
 import { POST as cronPost } from "@/app/api/internal/cron/route";
+import { POST as harvestPost } from "@/app/api/internal/harvest/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { GET as alphasGet } from "@/app/api/alphas/route";
 import { POST as backtestsPost } from "@/app/api/backtests/route";
@@ -142,8 +143,24 @@ describeIfDb("API integration (real database)", () => {
       }),
     );
     expect(response.status).toBe(200);
-    const body = await readJson<{ mode: string }>(response);
+    const body = await readJson<{ mode: string; harvest?: { considered: number } }>(response);
     expect(body.mode === "cloudflare-queue" || body.mode === "direct").toBe(true);
+    expect(body.harvest).toBeDefined();
+  });
+
+  it("POST /api/internal/harvest accepts valid secret", async () => {
+    const secret = "integration-test-cron-secret";
+    process.env.CRON_SECRET = secret;
+    const response = await harvestPost(
+      new Request("http://test/api/internal/harvest", {
+        method: "POST",
+        headers: { "x-cron-secret": secret },
+      }),
+    );
+    expect(response.status).toBe(200);
+    const body = await readJson<{ harvest: { considered: number; written: number } }>(response);
+    expect(typeof body.harvest.considered).toBe("number");
+    expect(typeof body.harvest.written).toBe("number");
   });
 
   it("POST /api/auth/login returns ok when DASHBOARD_PASSWORD is unset", async () => {
