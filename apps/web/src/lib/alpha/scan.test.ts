@@ -106,6 +106,31 @@ describe("collectOpportunities", () => {
     expect(report.opportunities).toHaveLength(1);
     expect(report.opportunities[0]?.action).toBe("BUY_YES");
   });
+
+  it("hasEvent skips markets without event extras", async () => {
+    const report = await collectOpportunities(
+      [
+        {
+          market: market("plain"),
+          bars: [bar("plain", 0.1, "2026-01-01T00:00:00.000Z")],
+        },
+        {
+          market: market("stated"),
+          bars: [
+            {
+              ...bar("stated", 0.1, "2026-01-01T00:00:00.000Z"),
+              event: { fixture: { favoriteDownBreak: true } },
+            },
+          ],
+        },
+      ],
+      { alphaIds: ["event_threshold"], hasEvent: true, includeHolds: true },
+    );
+    expect(report.skipped).toBe(1);
+    expect(report.opportunities).toHaveLength(1);
+    expect(report.opportunities[0]?.marketId).toBe("stated");
+    expect(report.opportunities[0]?.alphaId).toBe("event_threshold");
+  });
 });
 
 describe("opportunityRank", () => {
@@ -127,6 +152,10 @@ describe("parseScanQuery", () => {
     expect(parsed.action).toBe("BUY_NO");
     expect(parsed.includeHolds).toBe(true);
     expect(parsed.limit).toBe(5);
+  });
+
+  it("parses hasEvent", () => {
+    expect(parseScanQuery(new URLSearchParams("hasEvent=true")).hasEvent).toBe(true);
   });
 });
 

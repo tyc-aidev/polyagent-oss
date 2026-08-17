@@ -59,6 +59,7 @@ export const scanAlphasSchema = z.object({
   limit: z.number().int().min(1).max(100).optional(),
   universeLimit: z.number().int().min(1).max(50).optional(),
   includeHolds: z.boolean().optional(),
+  hasEvent: z.boolean().optional(),
 });
 
 export const sweepBacktestSchema = z
@@ -92,6 +93,7 @@ export const researchAlphasSchema = z.object({
   maxPositionSize: z.number().positive().max(1_000_000).optional(),
   steps: z.number().int().min(1).max(5).optional(),
   split: backtestSplitSchema.optional(),
+  hasEvent: z.boolean().optional(),
 });
 
 export type PriceBarInput = z.infer<typeof priceBarInputSchema>;

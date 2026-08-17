@@ -22,6 +22,7 @@ All notable changes to PolyAgent OSS are documented here.
 - `event_threshold` catalog alpha: trade when a numeric `features.event[source][key]` extra clears a threshold (HOLD if the source is off)
 - Optional `event` extras on price bars (inline backtests and imported snapshots) so `event_threshold` can be replayed
 - Snapshot harvester persists FeatureSource extras on `MarketPriceSnapshot.event` when a source is enabled (`withEvent` in the harvest result)
+- Live mids no longer drop harvested `event` extras; scan/research accept `hasEvent=true` to find markets with an event tape
 
 ## [0.1.0] — 2026-06-15
 

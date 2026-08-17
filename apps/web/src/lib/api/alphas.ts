@@ -187,6 +187,7 @@ export async function scanAlphaOpportunities(input: ScanAlphasInput): Promise<Al
     lookback: input.lookback,
     limit: input.limit,
     includeHolds: input.includeHolds,
+    hasEvent: input.hasEvent,
   });
 }
 
@@ -201,6 +202,7 @@ export async function runAlphaResearch(input: ResearchAlphasInput): Promise<Alph
     universeLimit: input.universeLimit ?? DEFAULT_RESEARCH_UNIVERSE,
     limit: Math.max(top, 10),
     includeHolds: false,
+    hasEvent: input.hasEvent,
   });
 
   const liveHits = scan.opportunities.slice(0, top);
