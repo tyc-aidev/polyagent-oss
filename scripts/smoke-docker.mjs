@@ -192,6 +192,18 @@ async function main() {
       Array.isArray(body?.sources) && body.sources.some((s) => s.id === "fixture" && s.enabled === false),
       "Feature sources missing fixture (should be disabled by default)",
     );
+    assert(
+      Array.isArray(body?.playbook) && body.playbook.some((s) => s.path === "/api/alphas/tapes"),
+      "Alpha playbook missing tapes step",
+    );
+  }
+
+  logStep("Stored tape inventory");
+  {
+    const { status, body } = await api("/api/alphas/tapes?limit=20");
+    assert(status === 200, `Tapes returned ${status}: ${JSON.stringify(body)}`);
+    assert(Array.isArray(body?.tapes), "Tapes missing array");
+    assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Tapes missing limitations");
   }
 
   logStep("Universe alpha scan");

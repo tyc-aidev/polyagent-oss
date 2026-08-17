@@ -114,6 +114,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | Method | Path | Purpose |
 |--------|------|---------|
 | `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas + research playbook + FeatureSources |
+| `GET` | `/api/alphas/tapes` | Inventory stored harvest/import tapes (`hasEvent=1` = event extras only) |
 | `GET` | `/api/alphas/:id` | Single alpha definition |
 | `GET`/`POST` | `/api/alphas/scan` | Rank catalog signals across the live (or specified) universe |
 | `POST` | `/api/alphas/research` | One-shot scan + sweep (+ optional OOS); returns promote payloads |
@@ -125,7 +126,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `POST` | `/api/backtests/sweep` | Grid-search a catalog alpha's parameters (≤50 combos) |
 | `POST` | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` (`CRON_SECRET`) |
 
-Agent loop: `GET /api/alphas` (hypotheses + playbook + sources) → `POST /api/alphas/research` (scan + sweep in one call) → `POST /api/bots` with the returned `promote.strategy`. Individual steps (`/scan`, `/backtests`, `/backtests/sweep`) remain available.
+Agent loop: `GET /api/alphas` (hypotheses + playbook + sources) → `GET /api/alphas/tapes` (what tape exists) → `POST /api/alphas/research` (scan + sweep) → `POST /api/bots` with the returned `promote.strategy`. Individual steps (`/scan`, `/backtests`, `/backtests/sweep`) remain available.
 
 `GET /api/alphas` also lists registered **FeatureSources** (`sources: [{ id, enabled }]`). Price-derived features stay the default. Optional sources attach extras under `features.event[sourceId]` and must no-op when their env key is unset. Source failures never block harvest, ticks, or catalog evaluation.
 

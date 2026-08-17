@@ -12,6 +12,7 @@ import { POST as cronPost } from "@/app/api/internal/cron/route";
 import { POST as harvestPost } from "@/app/api/internal/harvest/route";
 import { POST as loginPost } from "@/app/api/auth/login/route";
 import { GET as alphasGet } from "@/app/api/alphas/route";
+import { GET as tapesGet } from "@/app/api/alphas/tapes/route";
 import { POST as alphasScanPost } from "@/app/api/alphas/scan/route";
 import { POST as researchPost } from "@/app/api/alphas/research/route";
 import { POST as historyPost } from "@/app/api/markets/[id]/history/route";
@@ -202,6 +203,39 @@ describeIfDb("API integration (real database)", () => {
     expect(body.sources.some((source) => source.id === "fixture" && source.enabled === false)).toBe(
       true,
     );
+    expect(body.playbook.some((step) => step.path === "/api/alphas/tapes")).toBe(true);
+  });
+
+  it("GET /api/alphas/tapes lists imported history and event sources", async () => {
+    const marketId = `tape-test-${Date.now()}`;
+    const imported = await historyPost(
+      jsonRequest(`http://test/api/markets/${marketId}/history`, {
+        method: "POST",
+        body: JSON.stringify({
+          bars: [
+            {
+              capturedAt: "2026-01-01T00:00:00.000Z",
+              yesPrice: 0.4,
+              noPrice: 0.6,
+              volume24h: 1_000,
+              event: { fixture: { favoriteDownBreak: true } },
+            },
+          ],
+        }),
+      }),
+      { params: Promise.resolve({ id: marketId }) },
+    );
+    expect(imported.status).toBe(201);
+
+    const response = await tapesGet(new Request("http://test/api/alphas/tapes?hasEvent=1&limit=100"));
+    expect(response.status).toBe(200);
+    const body = await readJson<{
+      tapes: Array<{ marketId: string; hasEvent: boolean; eventSources: string[]; bars: number }>;
+    }>(response);
+    const tape = body.tapes.find((item) => item.marketId === marketId);
+    expect(tape?.hasEvent).toBe(true);
+    expect(tape?.eventSources).toContain("fixture");
+    expect(tape?.bars).toBeGreaterThan(0);
   });
 
   it("POST /api/alphas/scan ranks imported history without live Gamma", async () => {
