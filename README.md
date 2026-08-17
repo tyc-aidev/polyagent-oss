@@ -150,7 +150,7 @@ To backtest an event-state hypothesis, attach `event` on inline or imported bars
 }
 ```
 
-Harvested snapshots stay price-only unless extras were imported.
+The 5-minute harvester attaches enabled FeatureSource extras to each new snapshot (`harvest.withEvent`). Harvested rows stay price-only when every source is disabled (the default).
 
 To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
 

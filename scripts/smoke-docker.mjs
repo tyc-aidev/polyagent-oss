@@ -165,6 +165,7 @@ async function main() {
       assert(status === 200, `Harvest returned ${status}: ${JSON.stringify(body)}`);
       assert(typeof body?.harvest?.considered === "number", "Harvest response missing considered");
       assert(typeof body?.harvest?.written === "number", "Harvest response missing written");
+      assert(typeof body?.harvest?.withEvent === "number", "Harvest response missing withEvent");
     }
   }
 

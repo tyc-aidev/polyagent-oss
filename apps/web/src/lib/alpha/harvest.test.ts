@@ -12,6 +12,7 @@ const mockPrisma = {
 
 const listMarkets = vi.fn();
 const getMarket = vi.fn();
+const enrichMarketFeatures = vi.fn(async (_market: unknown, features: unknown) => features);
 
 vi.mock("@/lib/db", () => ({
   getPrismaAsync: vi.fn(async () => mockPrisma),
@@ -26,6 +27,10 @@ vi.mock("@/lib/polymarket/gamma", () => ({
     listMarkets,
     getMarket,
   })),
+}));
+
+vi.mock("@/lib/alpha/sources/registry", () => ({
+  enrichMarketFeatures: (market: unknown, features: unknown) => enrichMarketFeatures(market, features),
 }));
 
 const { collectHarvestMarketIds, harvestMarketSnapshots } = await import("./harvest");
@@ -69,6 +74,7 @@ describe("harvestMarketSnapshots", () => {
     mockPrisma.marketPriceSnapshot.createMany.mockResolvedValue({ count: 2 });
     mockPrisma.marketPriceSnapshot.deleteMany.mockResolvedValue({ count: 0 });
     listMarkets.mockResolvedValue([market("m1"), market("m2")]);
+    enrichMarketFeatures.mockImplementation(async (_market: unknown, features: unknown) => features);
   });
 
   it("writes snapshots for listed markets when none are fresh", async () => {
@@ -126,6 +132,35 @@ describe("harvestMarketSnapshots", () => {
     const result = await harvestMarketSnapshots();
     expect(result.pruned).toBe(9);
     expect(mockPrisma.marketPriceSnapshot.deleteMany).toHaveBeenCalled();
+  });
+
+  it("persists FeatureSource extras on the snapshot when a source is enabled", async () => {
+    enrichMarketFeatures.mockImplementation(async (snap: unknown, features: unknown) => ({
+      ...(features as object),
+      event:
+        snap && typeof snap === "object" && "id" in snap && snap.id === "m1"
+          ? { fixture: { favoriteDownBreak: true } }
+          : undefined,
+    }));
+
+    const result = await harvestMarketSnapshots();
+    expect(result.withEvent).toBe(1);
+    const written = mockPrisma.marketPriceSnapshot.createMany.mock.calls[0]?.[0]?.data as Array<{
+      marketId: string;
+      event?: unknown;
+    }>;
+    expect(written.find((row) => row.marketId === "m1")?.event).toEqual({
+      fixture: { favoriteDownBreak: true },
+    });
+    expect(written.find((row) => row.marketId === "m2")?.event).toBeUndefined();
+  });
+
+  it("still writes the price row when enrich throws", async () => {
+    enrichMarketFeatures.mockRejectedValue(new Error("source down"));
+    const result = await harvestMarketSnapshots();
+    expect(result.written).toBe(2);
+    expect(result.withEvent).toBe(0);
+    expect(result.errors).toBe(0);
   });
 
   it("no-ops when harvest is disabled", async () => {
