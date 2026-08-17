@@ -24,6 +24,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Snapshot harvester persists FeatureSource extras on `MarketPriceSnapshot.event` when a source is enabled (`withEvent` in the harvest result)
 - Live mids no longer drop harvested `event` extras; scan/research accept `hasEvent=true` to find markets with an event tape
 - `GET /api/alphas/tapes` inventories stored harvest/import tapes (bar counts, `hasEvent`, event source ids)
+- Tennis FeatureSource (Live Tennis API, REST-only, free tier): env-gated by `LIVETENNIS_API_KEY`, fills `features.event.tennis` with break/serve/set state; explicit `LIVETENNIS_MATCH_MAP` bindings with a conservative name/time fallback
 
 ## [0.1.0] — 2026-06-15
 

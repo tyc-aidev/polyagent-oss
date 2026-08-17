@@ -6,6 +6,7 @@ import type {
   MarketSnapshot,
 } from "@polyagent/shared";
 import { FixtureFeatureSource } from "./fixture";
+import { TennisFeatureSource } from "./tennis";
 
 export class FeatureRegistry {
   constructor(private readonly sources: FeatureSource[] = []) {}
@@ -39,7 +40,7 @@ export class FeatureRegistry {
   }
 }
 
-const defaultRegistry = new FeatureRegistry([new FixtureFeatureSource()]);
+const defaultRegistry = new FeatureRegistry([new FixtureFeatureSource(), new TennisFeatureSource()]);
 
 export function getFeatureRegistry(): FeatureRegistry {
   return defaultRegistry;
