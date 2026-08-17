@@ -86,4 +86,21 @@ describe("runBacktest", () => {
     });
     expect(report.marketIds).toEqual(["keep"]);
   });
+
+  it("replays event_threshold from inline event extras", () => {
+    const tape = bars([0.45, 0.46, 0.47]).map((bar, index) =>
+      index === 1
+        ? { ...bar, event: { fixture: { favoriteDownBreak: true } } }
+        : bar,
+    );
+    const report = runBacktest({
+      alphaId: "event_threshold",
+      parameters: { threshold: 1, side: 1, compare: 1 },
+      bars: tape,
+      startingBalance: 10_000,
+      maxPositionSize: 50,
+    });
+    expect(report.trades.some((trade) => trade.action === "BUY_YES" && trade.executed)).toBe(true);
+    expect(report.trades[0]?.action).toBe("HOLD");
+  });
 });

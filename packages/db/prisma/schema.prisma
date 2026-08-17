@@ -70,6 +70,7 @@ model MarketPriceSnapshot {
   noPrice    Float
   volume24h  Float
   capturedAt DateTime @default(now())
+  event      Json?
   tickId     String?
   tick       BotTick? @relation(fields: [tickId], references: [id], onDelete: SetNull)
 

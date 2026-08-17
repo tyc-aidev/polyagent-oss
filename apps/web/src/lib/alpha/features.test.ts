@@ -9,6 +9,7 @@ function bar(overrides: Partial<PriceBar> & Pick<PriceBar, "yesPrice">): PriceBa
     yesPrice: overrides.yesPrice,
     noPrice: overrides.noPrice ?? 1 - overrides.yesPrice,
     volume24h: overrides.volume24h ?? 1000,
+    event: overrides.event,
   };
 }
 
@@ -74,5 +75,17 @@ describe("computeMarketFeatures", () => {
     expect(early?.yesPrice).toBeCloseTo(0.41);
     expect(withLater?.yesPrice).toBeCloseTo(0.9);
     expect(early?.lookbackReturn).not.toBeCloseTo(withLater?.lookbackReturn ?? 0);
+  });
+
+  it("copies the last bar's event extras onto features", () => {
+    const features = computeMarketFeatures([
+      bar({ yesPrice: 0.4, capturedAt: new Date("2026-01-01T00:00:00.000Z") }),
+      bar({
+        yesPrice: 0.41,
+        capturedAt: new Date("2026-01-01T00:05:00.000Z"),
+        event: { fixture: { favoriteDownBreak: true } },
+      }),
+    ]);
+    expect(features?.event?.fixture?.favoriteDownBreak).toBe(true);
   });
 });

@@ -20,6 +20,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Pluggable `FeatureSource` interface: env-gated extras on `features.event[sourceId]`; fixture source disabled by default; catalog lists `sources`
 - One-shot research compose (`POST /api/alphas/research`): scan the universe, sweep top-N candidates, return paper-bot promote payloads
 - `event_threshold` catalog alpha: trade when a numeric `features.event[source][key]` extra clears a threshold (HOLD if the source is off)
+- Optional `event` extras on price bars (inline backtests and imported snapshots) so `event_threshold` can be replayed
 
 ## [0.1.0] — 2026-06-15
 

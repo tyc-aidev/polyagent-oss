@@ -22,6 +22,21 @@ describe("importHistorySchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts optional event extras on a bar", () => {
+    const result = importHistorySchema.safeParse({
+      bars: [
+        {
+          capturedAt: "2026-01-01T00:00:00.000Z",
+          yesPrice: 0.42,
+          noPrice: 0.58,
+          volume24h: 1200,
+          event: { fixture: { favoriteDownBreak: true, set: 1 } },
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects prices outside [0, 1]", () => {
     const result = importHistorySchema.safeParse({
       bars: [

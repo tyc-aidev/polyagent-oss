@@ -260,6 +260,39 @@ async function main() {
     assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Missing limitations");
   }
 
+  logStep("Event-tape backtest");
+  {
+    const { status, body } = await api("/api/backtests", {
+      method: "POST",
+      body: JSON.stringify({
+        alphaId: "event_threshold",
+        marketIds: [marketId],
+        parameters: { threshold: 1, side: 1 },
+        startingBalance: 10_000,
+        maxPositionSize: 25,
+        bars: [
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:00:00.000Z",
+            yesPrice: 0.45,
+            noPrice: 0.55,
+            volume24h: 1500,
+          },
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:05:00.000Z",
+            yesPrice: 0.46,
+            noPrice: 0.54,
+            volume24h: 1500,
+            event: { fixture: { favoriteDownBreak: true } },
+          },
+        ],
+      }),
+    });
+    assert(status === 201, `Event backtest failed (${status}): ${JSON.stringify(body)}`);
+    assert(body?.metrics?.trades >= 1, "Event backtest recorded no trades");
+  }
+
   logStep("Parameter sweep");
   {
     const { status, body } = await api("/api/backtests/sweep", {

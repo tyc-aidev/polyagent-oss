@@ -131,6 +131,27 @@ Agent loop: `GET /api/alphas` (hypotheses + playbook + sources) → `POST /api/a
 
 The `event_threshold` catalog alpha trades when a numeric extra in `features.event[source][key]` clears `threshold` (`true`→1, `false`→0). It HOLDs when the source is disabled or the key is missing. Sweep `threshold` / `side` / `compare` like any other catalog alpha.
 
+To backtest an event-state hypothesis, attach `event` on inline or imported bars:
+
+```json
+{
+  "alphaId": "event_threshold",
+  "marketIds": ["m1"],
+  "bars": [
+    {
+      "marketId": "m1",
+      "capturedAt": "2026-01-01T00:00:00.000Z",
+      "yesPrice": 0.45,
+      "noPrice": 0.55,
+      "volume24h": 1000,
+      "event": { "fixture": { "favoriteDownBreak": true } }
+    }
+  ]
+}
+```
+
+Harvested snapshots stay price-only unless extras were imported.
+
 To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
 
 `GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`. `POST` accepts the same body as JSON.

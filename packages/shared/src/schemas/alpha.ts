@@ -1,11 +1,25 @@
 import { z } from "zod";
 
+export const eventFeatureValueSchema = z.union([
+  z.number().finite(),
+  z.string().max(128),
+  z.boolean(),
+  z.null(),
+]);
+
+export const eventFeatureBagSchema = z
+  .record(z.record(eventFeatureValueSchema))
+  .refine((bag) => Object.keys(bag).length <= 8, {
+    message: "event bag allows at most 8 sources",
+  });
+
 export const priceBarInputSchema = z.object({
   marketId: z.string().min(1).optional(),
   capturedAt: z.coerce.date(),
   yesPrice: z.number().min(0).max(1),
   noPrice: z.number().min(0).max(1),
   volume24h: z.number().min(0),
+  event: eventFeatureBagSchema.optional(),
 });
 
 export const importHistorySchema = z.object({
