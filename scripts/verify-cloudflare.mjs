@@ -118,6 +118,7 @@ async function main() {
       Array.isArray(body?.playbook) && body.playbook.some((s) => s.path === "/api/alphas/scan"),
       "Alpha playbook missing scan step",
     );
+    assert(Array.isArray(body?.sources), "Feature sources missing from catalog");
   }
 
   console.log("\n✓ Cloudflare verification passed\n");

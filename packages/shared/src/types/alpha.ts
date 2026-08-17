@@ -27,6 +27,11 @@ export interface PriceBar {
   volume24h: number;
 }
 
+export type EventFeatureValue = number | string | boolean | null;
+
+/** Namespaced extras from optional FeatureSources, keyed by source id. */
+export type EventFeatureBag = Record<string, Record<string, EventFeatureValue>>;
+
 export interface MarketFeatures {
   marketId: string;
   timestamp: Date;
@@ -41,6 +46,32 @@ export interface MarketFeatures {
   distanceFromFair: number;
   meanReversionResidual: number | null;
   sampleSize: number;
+  event?: EventFeatureBag;
+}
+
+export interface FeatureSourceStatus {
+  id: string;
+  enabled: boolean;
+}
+
+export interface FeatureSourceInput {
+  market: {
+    id: string;
+    slug: string;
+    question: string;
+    endDate?: string;
+  };
+  features: MarketFeatures;
+}
+
+/**
+ * Optional event-state plug-in. Sources must no-op when their env key is unset
+ * and must never throw into harvest, ticks, or catalog evaluation.
+ */
+export interface FeatureSource {
+  readonly id: string;
+  enabled(): boolean;
+  enrich(input: FeatureSourceInput): Promise<Record<string, EventFeatureValue> | null>;
 }
 
 export interface AlphaSignal {

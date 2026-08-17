@@ -63,6 +63,8 @@ The web service runs at [http://localhost:3000](http://localhost:3000) with an i
 | `DASHBOARD_PASSWORD` | — | Optional password gate for public deploys |
 | `SESSION_SECRET` | — | HMAC secret for signed session cookies (falls back to `DASHBOARD_PASSWORD`) |
 | `CRON_SECRET` | — | Required in production for `/api/internal/*` scheduler routes |
+| `FEATURE_SOURCE_FIXTURE` | unset | Set `1`/`true` to enable the in-process fixture FeatureSource |
+| `FEATURE_SOURCE_FIXTURE_JSON` | — | Optional `{ "marketId": { "key": value } }` extras for the fixture source |
 
 See [`.env.example`](.env.example) for a full template.
 
@@ -111,7 +113,7 @@ Agents can list research alphas, inspect market features, import snapshot histor
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas + research playbook |
+| `GET` | `/api/alphas` | Catalog of versioned, parameterized alphas + research playbook + FeatureSources |
 | `GET` | `/api/alphas/:id` | Single alpha definition |
 | `GET`/`POST` | `/api/alphas/scan` | Rank catalog signals across the live (or specified) universe |
 | `GET` | `/api/markets/:id/history` | Stored `MarketPriceSnapshot` bars |
@@ -123,6 +125,10 @@ Agents can list research alphas, inspect market features, import snapshot histor
 | `POST` | `/api/internal/harvest` | Sample Gamma mids into `MarketPriceSnapshot` (`CRON_SECRET`) |
 
 Agent loop: `GET /api/alphas` (hypotheses + playbook) → `GET /api/alphas/scan` (where the catalog is firing) → `POST /api/backtests` (replay a candidate) → `POST /api/backtests/sweep` (search published parameter space) → `POST /api/bots` with `strategy.type=alpha`.
+
+`GET /api/alphas` also lists registered **FeatureSources** (`sources: [{ id, enabled }]`). Price-derived features stay the default. Optional sources attach extras under `features.event[sourceId]` and must no-op when their env key is unset. Source failures never block harvest, ticks, or catalog evaluation.
+
+To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
 
 `GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`. `POST` accepts the same body as JSON.
 

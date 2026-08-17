@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { getAlphaDefinition, getAlphaResearchPlaybook, listAlphaCatalog } from "./alphas";
+import {
+  getAlphaDefinition,
+  getAlphaResearchPlaybook,
+  listAlphaCatalog,
+  listAlphaFeatureSources,
+} from "./alphas";
 
 describe("alpha catalog API helpers", () => {
   it("lists versioned catalog entries with hypotheses", () => {
@@ -32,5 +37,10 @@ describe("alpha catalog API helpers", () => {
       "/api/backtests/sweep",
       "/api/bots",
     ]);
+  });
+
+  it("lists registered feature sources (fixture disabled by default)", () => {
+    const sources = listAlphaFeatureSources();
+    expect(sources.some((source) => source.id === "fixture" && source.enabled === false)).toBe(true);
   });
 });

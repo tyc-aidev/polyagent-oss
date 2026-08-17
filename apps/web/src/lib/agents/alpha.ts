@@ -2,6 +2,7 @@ import type { AgentDecision, AnalysisContext, BotConfig, IAgent } from "@polyage
 import { evaluateAlpha, getAlpha } from "@/lib/alpha/catalog";
 import { barFromSnapshot, signalToDecision, withCurrentBar } from "@/lib/alpha/decisions";
 import { computeMarketFeatures, DEFAULT_FEATURE_LOOKBACK } from "@/lib/alpha/features";
+import { enrichMarketFeatures } from "@/lib/alpha/sources/registry";
 
 export class AlphaAgent implements IAgent {
   readonly id = "alpha";
@@ -26,11 +27,12 @@ export class AlphaAgent implements IAgent {
     const lookback = strategy.lookback ?? DEFAULT_FEATURE_LOOKBACK;
     const current = barFromSnapshot(context.market, context.timestamp);
     const bars = withCurrentBar(context.recentBars ?? [], current);
-    const features = computeMarketFeatures(bars, lookback);
-    if (!features) {
+    const computed = computeMarketFeatures(bars, lookback);
+    if (!computed) {
       return [this.hold(context, "No market features available")];
     }
 
+    const features = await enrichMarketFeatures(context.market, computed);
     const signal = evaluateAlpha(strategy.alphaId, features, strategy.parameters);
     return [
       signalToDecision(signal, context.portfolio.botId, context.config.risk.maxPositionSize, features.yesPrice),

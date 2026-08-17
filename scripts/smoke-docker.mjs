@@ -187,6 +187,10 @@ async function main() {
       Array.isArray(body?.playbook) && body.playbook.some((s) => s.path === "/api/alphas/scan"),
       "Alpha playbook missing scan step",
     );
+    assert(
+      Array.isArray(body?.sources) && body.sources.some((s) => s.id === "fixture" && s.enabled === false),
+      "Feature sources missing fixture (should be disabled by default)",
+    );
   }
 
   logStep("Universe alpha scan");

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAlphaResearchPlaybook, listAlphaCatalog } from "@/lib/api/alphas";
+import { getAlphaResearchPlaybook, listAlphaCatalog, listAlphaFeatureSources } from "@/lib/api/alphas";
 import { apiError, handleApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/request";
 
@@ -12,6 +12,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       alphas: listAlphaCatalog(),
       playbook: getAlphaResearchPlaybook(),
+      sources: listAlphaFeatureSources(),
     });
   } catch (error) {
     return handleApiError(error);

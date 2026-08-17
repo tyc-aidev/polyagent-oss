@@ -18,7 +18,7 @@ export const ALPHA_RESEARCH_PLAYBOOK: AlphaPlaybookStep[] = [
     step: 3,
     method: "GET",
     path: "/api/markets/:id/features",
-    purpose: "Inspect the features that produced a signal",
+    purpose: "Inspect price features plus optional features.event extras from FeatureSources",
   },
   {
     step: 4,
