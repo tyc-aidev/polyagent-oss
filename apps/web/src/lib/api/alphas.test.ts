@@ -22,13 +22,14 @@ describe("alpha catalog API helpers", () => {
     expect(() => getAlphaDefinition("missing")).toThrow(/not found/i);
   });
 
-  it("publishes a five-step research playbook for agents", () => {
+  it("publishes a research playbook for agents", () => {
     const playbook = getAlphaResearchPlaybook();
     expect(playbook.map((step) => step.path)).toEqual([
       "/api/alphas",
       "/api/alphas/scan",
       "/api/markets/:id/features",
       "/api/backtests",
+      "/api/backtests/sweep",
       "/api/bots",
     ]);
   });

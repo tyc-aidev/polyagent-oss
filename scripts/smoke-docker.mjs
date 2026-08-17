@@ -239,6 +239,40 @@ async function main() {
     assert(Array.isArray(body?.limitations) && body.limitations.length > 0, "Missing limitations");
   }
 
+  logStep("Parameter sweep");
+  {
+    const { status, body } = await api("/api/backtests/sweep", {
+      method: "POST",
+      body: JSON.stringify({
+        alphaId: "threshold_yes",
+        marketIds: [marketId],
+        grid: { buyYesBelow: [0.15, 0.99] },
+        startingBalance: 10_000,
+        maxPositionSize: 25,
+        bars: [
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:00:00.000Z",
+            yesPrice: 0.2,
+            noPrice: 0.8,
+            volume24h: 1500,
+          },
+          {
+            marketId,
+            capturedAt: "2026-01-01T00:05:00.000Z",
+            yesPrice: 0.55,
+            noPrice: 0.45,
+            volume24h: 1500,
+          },
+        ],
+      }),
+    });
+    assert(status === 201, `Sweep failed (${status}): ${JSON.stringify(body)}`);
+    assert(body?.combinations === 2, `Sweep combinations ${body?.combinations} != 2`);
+    assert(body?.winner?.parameters?.buyYesBelow === 0.99, "Sweep winner was not the trading threshold");
+    assert(Array.isArray(body?.results) && body.results.length === 2, "Sweep results missing");
+  }
+
   logStep("Cleanup smoke-test bot");
   {
     const { status } = await api(`/api/bots/${smokeBotId}`, {

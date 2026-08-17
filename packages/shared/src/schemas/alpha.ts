@@ -40,7 +40,26 @@ export const scanAlphasSchema = z.object({
   includeHolds: z.boolean().optional(),
 });
 
+export const sweepBacktestSchema = z
+  .object({
+    alphaId: z.string().trim().min(1).max(64),
+    marketIds: z.array(z.string().min(1)).min(1).max(20),
+    from: z.coerce.date().optional(),
+    to: z.coerce.date().optional(),
+    bars: z.array(priceBarInputSchema).max(5_000).optional(),
+    startingBalance: z.number().positive().max(10_000_000).optional(),
+    maxPositionSize: z.number().positive().max(1_000_000).optional(),
+    confidenceThreshold: z.number().min(0).max(1).optional(),
+    lookback: z.number().int().min(1).max(100).optional(),
+    grid: z.record(z.array(z.number().finite()).min(1).max(50)).optional(),
+    steps: z.record(z.number().int().min(1).max(50)).optional(),
+  })
+  .refine((value) => !value.from || !value.to || value.from <= value.to, {
+    message: "from must be before or equal to to",
+  });
+
 export type PriceBarInput = z.infer<typeof priceBarInputSchema>;
 export type ImportHistoryInput = z.infer<typeof importHistorySchema>;
 export type RunBacktestInput = z.infer<typeof runBacktestSchema>;
 export type ScanAlphasInput = z.infer<typeof scanAlphasSchema>;
+export type SweepBacktestInput = z.infer<typeof sweepBacktestSchema>;

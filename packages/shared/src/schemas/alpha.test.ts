@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { importHistorySchema, runBacktestSchema, scanAlphasSchema } from "./alpha";
+import { importHistorySchema, runBacktestSchema, scanAlphasSchema, sweepBacktestSchema } from "./alpha";
 
 describe("importHistorySchema", () => {
   it("accepts a valid bar series", () => {
@@ -83,6 +83,35 @@ describe("scanAlphasSchema", () => {
   it("rejects more than 50 market ids", () => {
     const result = scanAlphasSchema.safeParse({
       marketIds: Array.from({ length: 51 }, (_, i) => `m${i}`),
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("sweepBacktestSchema", () => {
+  it("accepts an auto-grid sweep", () => {
+    const result = sweepBacktestSchema.safeParse({
+      alphaId: "threshold_yes",
+      marketIds: ["m1"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts an explicit grid and steps", () => {
+    const result = sweepBacktestSchema.safeParse({
+      alphaId: "momentum",
+      marketIds: ["m1"],
+      grid: { momentumThreshold: [0.01, 0.02, 0.04] },
+      steps: { unused: 3 },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects more than 50 values on one axis", () => {
+    const result = sweepBacktestSchema.safeParse({
+      alphaId: "momentum",
+      marketIds: ["m1"],
+      grid: { momentumThreshold: Array.from({ length: 51 }, (_, i) => i / 100) },
     });
     expect(result.success).toBe(false);
   });

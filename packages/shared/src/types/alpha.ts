@@ -126,3 +126,20 @@ export interface AlphaScanReport {
   opportunities: AlphaOpportunity[];
   limitations: string[];
 }
+
+export interface SweepComboResult {
+  parameters: Record<string, number>;
+  metrics: BacktestMetrics;
+  score: number;
+}
+
+export interface SweepReport {
+  alphaId: string;
+  marketIds: string[];
+  from: Date | null;
+  to: Date | null;
+  combinations: number;
+  winner: SweepComboResult | null;
+  results: SweepComboResult[];
+  limitations: string[];
+}
