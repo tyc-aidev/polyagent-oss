@@ -94,3 +94,35 @@ export interface BacktestReport {
   trades: BacktestTrade[];
   limitations: string[];
 }
+
+export interface AlphaPlaybookStep {
+  step: number;
+  method: "GET" | "POST";
+  path: string;
+  purpose: string;
+}
+
+export interface AlphaOpportunity {
+  marketId: string;
+  question: string;
+  slug: string;
+  yesPrice: number;
+  noPrice: number;
+  volume24h: number;
+  alphaId: string;
+  alphaName: string;
+  action: AgentAction;
+  score: number;
+  confidence: number;
+  reasoning: string;
+  rank: number;
+  features: MarketFeatures;
+}
+
+export interface AlphaScanReport {
+  scanned: number;
+  skipped: number;
+  lookback: number;
+  opportunities: AlphaOpportunity[];
+  limitations: string[];
+}

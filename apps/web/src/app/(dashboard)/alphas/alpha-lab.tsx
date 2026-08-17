@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import type {
   AlphaDefinition,
+  AlphaOpportunity,
+  AlphaScanReport,
   AlphaSignal,
   BacktestReport,
   MarketFeatures,
@@ -51,10 +53,11 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
   const [maxPositionSize, setMaxPositionSize] = useState("100");
   const [barsJson, setBarsJson] = useState("");
   const [signalMarketId, setSignalMarketId] = useState("");
-  const [busy, setBusy] = useState<"backtest" | "signals" | null>(null);
+  const [busy, setBusy] = useState<"backtest" | "signals" | "scan" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<BacktestReport | null>(null);
   const [signals, setSignals] = useState<SignalsResponse | null>(null);
+  const [scan, setScan] = useState<AlphaScanReport | null>(null);
 
   function mergedParameters(): Record<string, number> | undefined {
     if (!selected) return undefined;
@@ -111,6 +114,31 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
     }
   }
 
+  function adoptOpportunity(item: AlphaOpportunity) {
+    setSelectedId(item.alphaId);
+    setSignalMarketId(item.marketId);
+    setMarketIds(item.marketId);
+  }
+
+  async function scanUniverse() {
+    setBusy("scan");
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (selectedId) params.set("alphaId", selectedId);
+      const response = await fetch(`/api/alphas/scan?${params.toString()}`);
+      const body = (await response.json()) as AlphaScanReport & { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error ?? `Universe scan failed (${response.status})`);
+      }
+      setScan(body);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Universe scan failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function discoverSignals() {
     const marketId = signalMarketId.trim();
     if (!marketId) {
@@ -135,6 +163,29 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardTitle>Agent playbook</CardTitle>
+        <CardDescription>
+          Catalog → scan universe → inspect features → backtest → paper bot.
+        </CardDescription>
+        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>
+            <span className="font-mono text-xs">GET /api/alphas</span> — list hypotheses
+          </li>
+          <li>
+            <span className="font-mono text-xs">GET /api/alphas/scan</span> — rank live catalog
+            signals
+          </li>
+          <li>
+            <span className="font-mono text-xs">POST /api/backtests</span> — replay a candidate
+          </li>
+          <li>
+            <span className="font-mono text-xs">POST /api/bots</span> — promote{" "}
+            <span className="font-mono text-xs">strategy.type=alpha</span>
+          </li>
+        </ol>
+      </Card>
+
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {alphas.map((alpha) => {
           const active = alpha.id === selected?.id;
@@ -212,9 +263,22 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
                 placeholder="Polymarket market id"
               />
             </div>
-            <Button type="button" onClick={() => void discoverSignals()} disabled={busy !== null}>
-              {busy === "signals" ? "Evaluating…" : "Evaluate catalog"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void discoverSignals()} disabled={busy !== null}>
+                {busy === "signals" ? "Evaluating…" : "Evaluate catalog"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void scanUniverse()}
+                disabled={busy !== null}
+              >
+                {busy === "scan" ? "Scanning…" : "Scan universe"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Scan ranks the selected alpha on top live Gamma markets. Click a row to backtest it.
+            </p>
           </div>
         </Card>
 
@@ -277,6 +341,57 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
+      )}
+
+      {scan && (
+        <Card>
+          <CardTitle>Universe scan</CardTitle>
+          <CardDescription>
+            {scan.scanned} market{scan.scanned === 1 ? "" : "s"} scanned
+            {scan.skipped > 0 ? ` · ${scan.skipped} skipped` : ""}. Rank is confidence × |score|.
+          </CardDescription>
+          {scan.opportunities.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No active catalog signals in this universe. Try another alpha or wait for harvest.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Market</TableHead>
+                  <TableHead>Alpha</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead className="text-right">Rank</TableHead>
+                  <TableHead className="text-right">YES</TableHead>
+                  <TableHead>Reasoning</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {scan.opportunities.map((item) => (
+                  <TableRow key={`${item.marketId}-${item.alphaId}`}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        className="text-left hover:underline"
+                        onClick={() => adoptOpportunity(item)}
+                      >
+                        <span className="block text-sm text-foreground">
+                          {item.question || item.marketId}
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">{item.marketId}</span>
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{item.alphaId}</TableCell>
+                    <TableCell>{item.action}</TableCell>
+                    <TableCell className="text-right tabular-nums">{item.rank.toFixed(3)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{item.yesPrice.toFixed(3)}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.reasoning}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
       )}
 
       {signals && (
