@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { importHistorySchema, runBacktestSchema, scanAlphasSchema, sweepBacktestSchema } from "./alpha";
+import {
+  importHistorySchema,
+  researchAlphasSchema,
+  runBacktestSchema,
+  scanAlphasSchema,
+  sweepBacktestSchema,
+} from "./alpha";
 
 describe("importHistorySchema", () => {
   it("accepts a valid bar series", () => {
@@ -132,5 +138,26 @@ describe("sweepBacktestSchema", () => {
       grid: { momentumThreshold: Array.from({ length: 51 }, (_, i) => i / 100) },
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("researchAlphasSchema", () => {
+  it("accepts an empty body (live universe compose)", () => {
+    expect(researchAlphasSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts a capped compose request", () => {
+    const result = researchAlphasSchema.safeParse({
+      marketIds: ["m1"],
+      alphaIds: ["threshold_yes"],
+      top: 3,
+      steps: 2,
+      split: { mode: "holdout" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects top above 5", () => {
+    expect(researchAlphasSchema.safeParse({ top: 6 }).success).toBe(false);
   });
 });

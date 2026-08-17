@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type {
   AlphaDefinition,
   AlphaOpportunity,
+  AlphaResearchReport,
   AlphaScanReport,
   AlphaSignal,
   BacktestReport,
@@ -54,11 +55,14 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
   const [maxPositionSize, setMaxPositionSize] = useState("100");
   const [barsJson, setBarsJson] = useState("");
   const [signalMarketId, setSignalMarketId] = useState("");
-  const [busy, setBusy] = useState<"backtest" | "signals" | "scan" | "sweep" | null>(null);
+  const [busy, setBusy] = useState<"backtest" | "signals" | "scan" | "sweep" | "research" | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<BacktestReport | null>(null);
   const [signals, setSignals] = useState<SignalsResponse | null>(null);
   const [scan, setScan] = useState<AlphaScanReport | null>(null);
+  const [research, setResearch] = useState<AlphaResearchReport | null>(null);
   const [sweep, setSweep] = useState<SweepReport | null>(null);
   const [splitMode, setSplitMode] = useState<"" | "holdout" | "walk_forward">("");
 
@@ -171,6 +175,46 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
     setMarketIds(item.marketId);
   }
 
+  async function runResearch() {
+    setBusy("research");
+    setError(null);
+    try {
+      const ids = parseMarketIds(marketIds);
+      const response = await fetch("/api/alphas/research", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          marketIds: ids.length > 0 ? ids : undefined,
+          alphaIds: selectedId ? [selectedId] : undefined,
+          top: 3,
+          steps: 3,
+          split: splitPayload(),
+        }),
+      });
+      const body = (await response.json()) as AlphaResearchReport & { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error ?? `Research failed (${response.status})`);
+      }
+      setResearch(body);
+      setScan(body.scan);
+      const winner = body.candidates.find((item) => item.sweep?.winner);
+      if (winner) {
+        adoptOpportunity(winner.liveSignal);
+        if (winner.promote.strategy.parameters) {
+          const next: Record<string, string> = {};
+          for (const [name, value] of Object.entries(winner.promote.strategy.parameters)) {
+            next[name] = String(value);
+          }
+          setParamValues(next);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Research failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function scanUniverse() {
     setBusy("scan");
     setError(null);
@@ -217,11 +261,15 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
       <Card>
         <CardTitle>Agent playbook</CardTitle>
         <CardDescription>
-          Catalog → scan universe → backtest / OOS split → sweep parameters → paper bot.
+          Catalog → research (scan+sweep) → inspect → paper bot.
         </CardDescription>
         <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>
             <span className="font-mono text-xs">GET /api/alphas</span> — list hypotheses
+          </li>
+          <li>
+            <span className="font-mono text-xs">POST /api/alphas/research</span> — scan + sweep in
+            one call
           </li>
           <li>
             <span className="font-mono text-xs">GET /api/alphas/scan</span> — rank live catalog
@@ -329,6 +377,14 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
                 disabled={busy !== null}
               >
                 {busy === "scan" ? "Scanning…" : "Scan universe"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void runResearch()}
+                disabled={busy !== null}
+              >
+                {busy === "research" ? "Researching…" : "Run research loop"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
@@ -486,6 +542,63 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
               ))}
             </TableBody>
           </Table>
+        </Card>
+      )}
+
+      {research && (
+        <Card>
+          <CardTitle>Research loop</CardTitle>
+          <CardDescription>
+            {research.candidates.length} candidate{research.candidates.length === 1 ? "" : "s"} from{" "}
+            {research.scan.scanned} scanned market{research.scan.scanned === 1 ? "" : "s"}.
+          </CardDescription>
+          {research.candidates.length === 0 ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              No live catalog signals to research. Harvest a tape or pick another alpha.
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Market / alpha</TableHead>
+                  <TableHead>Live</TableHead>
+                  <TableHead className="text-right">Sweep P&amp;L</TableHead>
+                  <TableHead>Promote params</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {research.candidates.map((item) => (
+                  <TableRow key={`${item.marketId}-${item.alphaId}`}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        className="text-left hover:underline"
+                        onClick={() => adoptOpportunity(item.liveSignal)}
+                      >
+                        <span className="block text-sm">{item.question || item.marketId}</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {item.alphaId}
+                        </span>
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      {item.liveSignal.action} · {item.liveSignal.confidence.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {item.sweep?.winner
+                        ? formatUsd(item.sweep.winner.metrics.totalPnl)
+                        : (item.skippedReason ?? "n/a")}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {Object.entries(item.promote.strategy.parameters)
+                        .map(([name, value]) => `${name}=${Number(value.toFixed(4))}`)
+                        .join(" · ") || "defaults"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </Card>
       )}
 

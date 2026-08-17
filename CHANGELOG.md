@@ -18,6 +18,7 @@ All notable changes to PolyAgent OSS are documented here.
 - Parameter sweep (`POST /api/backtests/sweep`) grid-searches a catalog alpha (≤50 combos) and ranks in-sample Sharpe / P&L
 - Optional holdout / walk-forward split on `POST /api/backtests` and `/api/backtests/sweep` (`split.mode`) so agents can discard in-sample-only fits
 - Pluggable `FeatureSource` interface: env-gated extras on `features.event[sourceId]`; fixture source disabled by default; catalog lists `sources`
+- One-shot research compose (`POST /api/alphas/research`): scan the universe, sweep top-N candidates, return paper-bot promote payloads
 
 ## [0.1.0] — 2026-06-15
 
