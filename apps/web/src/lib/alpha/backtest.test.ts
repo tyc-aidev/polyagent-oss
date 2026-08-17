@@ -57,6 +57,25 @@ describe("runBacktest", () => {
     expect(withSpike.trades[2]?.action).toBe("BUY_NO");
   });
 
+  it("evaluateFrom warms features but only books ticks at/after the cut", () => {
+    const series = bars([0.2, 0.2, 0.2, 0.55]);
+    const full = runBacktest({
+      alphaId: "threshold_yes",
+      parameters: { buyYesBelow: 0.35 },
+      bars: series,
+    });
+    const oos = runBacktest({
+      alphaId: "threshold_yes",
+      parameters: { buyYesBelow: 0.35 },
+      bars: series,
+      evaluateFrom: series[2]?.capturedAt,
+    });
+
+    expect(oos.metrics.ticks).toBeLessThan(full.metrics.ticks);
+    expect(oos.metrics.ticks).toBe(2);
+    expect(oos.equityCurve[0]?.timestamp.getTime()).toBe(series[2]?.capturedAt.getTime());
+  });
+
   it("uses only the requested market ids from a mixed tape", () => {
     const report = runBacktest({
       alphaId: "threshold_yes",

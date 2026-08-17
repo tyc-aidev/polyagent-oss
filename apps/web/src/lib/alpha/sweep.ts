@@ -1,6 +1,7 @@
 import type {
   AlphaDefinition,
   BacktestMetrics,
+  BacktestSplitInput,
   PriceBar,
   SweepComboResult,
   SweepReport,
@@ -9,13 +10,14 @@ import { runBacktest } from "./backtest";
 import { getAlpha } from "./catalog";
 import { sortBars } from "./features";
 import { BACKTEST_LIMITATIONS } from "./limitations";
+import { computeSplitReport, SPLIT_LIMITATIONS } from "./split";
 
 export const MAX_SWEEP_COMBINATIONS = 50;
 export const DEFAULT_SWEEP_STEPS = 5;
 
 export const SWEEP_LIMITATIONS = [
   ...BACKTEST_LIMITATIONS,
-  "Sweep ranks in-sample metrics on the same tape. Winning parameters are not out-of-sample.",
+  "Sweep ranks in-sample metrics on the same tape unless split is set, in which case ranking uses out-of-sample metrics.",
   `At most ${MAX_SWEEP_COMBINATIONS} combinations. Equity curves are omitted — re-run POST /api/backtests with winner.parameters for the full report.`,
 ] as const;
 
@@ -28,6 +30,7 @@ export interface SweepOptions {
   maxPositionSize?: number;
   confidenceThreshold?: number;
   lookback?: number;
+  split?: BacktestSplitInput;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -165,10 +168,33 @@ export function runSweep(options: SweepOptions): SweepReport {
       confidenceThreshold: options.confidenceThreshold,
       lookback: options.lookback,
     });
+
+    if (!options.split) {
+      return {
+        parameters: report.parameters,
+        metrics: report.metrics,
+        score: sweepScore(report.metrics),
+      };
+    }
+
+    const split = computeSplitReport(
+      {
+        alphaId: options.alphaId,
+        parameters,
+        bars: options.bars,
+        startingBalance: options.startingBalance,
+        maxPositionSize: options.maxPositionSize,
+        confidenceThreshold: options.confidenceThreshold,
+        lookback: options.lookback,
+      },
+      options.split,
+    );
     return {
       parameters: report.parameters,
-      metrics: report.metrics,
-      score: sweepScore(report.metrics),
+      metrics: split.outOfSample,
+      score: sweepScore(split.outOfSample),
+      inSample: split.inSample,
+      outOfSample: split.outOfSample,
     };
   });
 
@@ -176,6 +202,20 @@ export function runSweep(options: SweepOptions): SweepReport {
   const sorted = sortBars(options.bars);
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
+  const headlineSplit = options.split
+    ? computeSplitReport(
+        {
+          alphaId: options.alphaId,
+          parameters: results[0]?.parameters,
+          bars: options.bars,
+          startingBalance: options.startingBalance,
+          maxPositionSize: options.maxPositionSize,
+          confidenceThreshold: options.confidenceThreshold,
+          lookback: options.lookback,
+        },
+        options.split,
+      )
+    : undefined;
 
   return {
     alphaId: options.alphaId,
@@ -185,6 +225,7 @@ export function runSweep(options: SweepOptions): SweepReport {
     combinations: results.length,
     winner: results[0] ?? null,
     results,
-    limitations: [...SWEEP_LIMITATIONS],
+    limitations: options.split ? [...SWEEP_LIMITATIONS, ...SPLIT_LIMITATIONS] : [...SWEEP_LIMITATIONS],
+    split: headlineSplit,
   };
 }

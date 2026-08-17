@@ -59,6 +59,24 @@ describe("runBacktestSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts a holdout split", () => {
+    const result = runBacktestSchema.safeParse({
+      alphaId: "momentum",
+      marketIds: ["m1"],
+      split: { mode: "holdout", trainFraction: 0.7 },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid split mode", () => {
+    const result = runBacktestSchema.safeParse({
+      alphaId: "momentum",
+      marketIds: ["m1"],
+      split: { mode: "random" },
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("scanAlphasSchema", () => {

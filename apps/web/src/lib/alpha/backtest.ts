@@ -23,6 +23,8 @@ export interface BacktestOptions {
   maxPositionSize?: number;
   confidenceThreshold?: number;
   lookback?: number;
+  /** Bars before this instant are feature warmup only — the paper book starts here. */
+  evaluateFrom?: Date;
 }
 
 function snapshotFromBar(bar: PriceBar): MarketSnapshot {
@@ -127,7 +129,20 @@ export function runBacktest(options: BacktestOptions): BacktestReport {
   let dayStartPnl = 0;
   let currentDay: string | null = null;
 
+  const evaluateFromMs = options.evaluateFrom?.getTime();
+  if (evaluateFromMs !== undefined) {
+    for (const [marketId, series] of byMarket) {
+      const warmup = series.filter((bar) => bar.capturedAt.getTime() < evaluateFromMs);
+      const lastWarmup = warmup[warmup.length - 1];
+      if (lastWarmup) latest.set(marketId, snapshotFromBar(lastWarmup));
+    }
+  }
+
   for (const ts of [...timestamps].sort((a, b) => a - b)) {
+    if (evaluateFromMs !== undefined && ts < evaluateFromMs) {
+      continue;
+    }
+
     const timestamp = new Date(ts);
     const dayKey = timestamp.toISOString().slice(0, 10);
     if (dayKey !== currentDay) {

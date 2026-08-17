@@ -24,13 +24,13 @@ export const ALPHA_RESEARCH_PLAYBOOK: AlphaPlaybookStep[] = [
     step: 4,
     method: "POST",
     path: "/api/backtests",
-    purpose: "Replay a candidate alpha on stored or inline bars",
+    purpose: "Replay a candidate; optional split={mode:holdout|walk_forward} for OOS metrics",
   },
   {
     step: 5,
     method: "POST",
     path: "/api/backtests/sweep",
-    purpose: "Search the catalog alpha's parameter space (≤50 combos, in-sample)",
+    purpose: "Search parameter space (≤50 combos); pass split to rank on OOS metrics",
   },
   {
     step: 6,

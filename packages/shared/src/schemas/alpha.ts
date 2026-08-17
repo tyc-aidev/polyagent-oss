@@ -12,6 +12,12 @@ export const importHistorySchema = z.object({
   bars: z.array(priceBarInputSchema).min(1).max(2_000),
 });
 
+export const backtestSplitSchema = z.object({
+  mode: z.enum(["holdout", "walk_forward"]),
+  trainFraction: z.number().min(0.5).max(0.9).optional(),
+  folds: z.number().int().min(2).max(8).optional(),
+});
+
 export const runBacktestSchema = z
   .object({
     alphaId: z.string().trim().min(1).max(64),
@@ -24,6 +30,7 @@ export const runBacktestSchema = z
     maxPositionSize: z.number().positive().max(1_000_000).optional(),
     confidenceThreshold: z.number().min(0).max(1).optional(),
     lookback: z.number().int().min(1).max(100).optional(),
+    split: backtestSplitSchema.optional(),
   })
   .refine((value) => !value.from || !value.to || value.from <= value.to, {
     message: "from must be before or equal to to",
@@ -53,6 +60,7 @@ export const sweepBacktestSchema = z
     lookback: z.number().int().min(1).max(100).optional(),
     grid: z.record(z.array(z.number().finite()).min(1).max(50)).optional(),
     steps: z.record(z.number().int().min(1).max(50)).optional(),
+    split: backtestSplitSchema.optional(),
   })
   .refine((value) => !value.from || !value.to || value.from <= value.to, {
     message: "from must be before or equal to to",

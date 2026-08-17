@@ -337,4 +337,37 @@ describeIfDb("API integration (real database)", () => {
     expect(body.winner.parameters.buyYesBelow).toBe(0.35);
     expect(body.results[0]?.metrics.trades).toBeGreaterThan(0);
   });
+
+  it("POST /api/backtests with holdout split returns in/out-of-sample metrics", async () => {
+    const prices = [0.2, 0.2, 0.2, 0.2, 0.5, 0.55, 0.55, 0.55];
+    const response = await backtestsPost(
+      jsonRequest("http://test/api/backtests", {
+        method: "POST",
+        body: JSON.stringify({
+          alphaId: "threshold_yes",
+          marketIds: ["integration-test-market"],
+          parameters: { buyYesBelow: 0.35 },
+          startingBalance: 10_000,
+          maxPositionSize: 50,
+          split: { mode: "holdout", trainFraction: 0.6 },
+          bars: prices.map((yesPrice, index) => ({
+            marketId: "integration-test-market",
+            capturedAt: new Date(Date.UTC(2026, 0, 1, 0, index * 5)).toISOString(),
+            yesPrice,
+            noPrice: Number((1 - yesPrice).toFixed(4)),
+            volume24h: 1_000,
+          })),
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await readJson<{
+      metrics: { ticks: number };
+      split: { mode: string; inSample: { ticks: number }; outOfSample: { ticks: number } };
+    }>(response);
+    expect(body.metrics.ticks).toBe(8);
+    expect(body.split.mode).toBe("holdout");
+    expect(body.split.inSample.ticks).toBeGreaterThan(0);
+    expect(body.split.outOfSample.ticks).toBeGreaterThan(0);
+  });
 });
