@@ -8,6 +8,7 @@ import type {
   AlphaSignal,
   BacktestReport,
   MarketFeatures,
+  SweepReport,
 } from "@polyagent/shared";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
@@ -53,11 +54,12 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
   const [maxPositionSize, setMaxPositionSize] = useState("100");
   const [barsJson, setBarsJson] = useState("");
   const [signalMarketId, setSignalMarketId] = useState("");
-  const [busy, setBusy] = useState<"backtest" | "signals" | "scan" | null>(null);
+  const [busy, setBusy] = useState<"backtest" | "signals" | "scan" | "sweep" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<BacktestReport | null>(null);
   const [signals, setSignals] = useState<SignalsResponse | null>(null);
   const [scan, setScan] = useState<AlphaScanReport | null>(null);
+  const [sweep, setSweep] = useState<SweepReport | null>(null);
 
   function mergedParameters(): Record<string, number> | undefined {
     if (!selected) return undefined;
@@ -71,6 +73,15 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
     return Object.keys(next).length > 0 ? next : undefined;
   }
 
+  function parseInlineBars(): unknown {
+    if (!barsJson.trim()) return undefined;
+    const bars = JSON.parse(barsJson) as unknown;
+    if (!Array.isArray(bars)) {
+      throw new Error("Inline bars must be a JSON array");
+    }
+    return bars;
+  }
+
   async function runBacktest() {
     if (!selected) return;
     const ids = parseMarketIds(marketIds);
@@ -82,14 +93,6 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
     setBusy("backtest");
     setError(null);
     try {
-      let bars: unknown;
-      if (barsJson.trim()) {
-        bars = JSON.parse(barsJson);
-        if (!Array.isArray(bars)) {
-          throw new Error("Inline bars must be a JSON array");
-        }
-      }
-
       const response = await fetch("/api/backtests", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -99,7 +102,7 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
           parameters: mergedParameters(),
           startingBalance: Number(startingBalance) || 10_000,
           maxPositionSize: Number(maxPositionSize) || 100,
-          bars,
+          bars: parseInlineBars(),
         }),
       });
       const body = (await response.json()) as BacktestReport & { error?: string };
@@ -109,6 +112,47 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
       setReport(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Backtest failed");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function runSweep() {
+    if (!selected) return;
+    const ids = parseMarketIds(marketIds);
+    if (ids.length === 0) {
+      setError("Enter at least one market ID.");
+      return;
+    }
+
+    setBusy("sweep");
+    setError(null);
+    try {
+      const response = await fetch("/api/backtests/sweep", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          alphaId: selected.id,
+          marketIds: ids,
+          startingBalance: Number(startingBalance) || 10_000,
+          maxPositionSize: Number(maxPositionSize) || 100,
+          bars: parseInlineBars(),
+        }),
+      });
+      const body = (await response.json()) as SweepReport & { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error ?? `Sweep failed (${response.status})`);
+      }
+      setSweep(body);
+      if (body.winner) {
+        const next: Record<string, string> = {};
+        for (const [name, value] of Object.entries(body.winner.parameters)) {
+          next[name] = String(value);
+        }
+        setParamValues(next);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sweep failed");
     } finally {
       setBusy(null);
     }
@@ -166,7 +210,7 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
       <Card>
         <CardTitle>Agent playbook</CardTitle>
         <CardDescription>
-          Catalog → scan universe → inspect features → backtest → paper bot.
+          Catalog → scan universe → backtest → sweep parameters → paper bot.
         </CardDescription>
         <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>
@@ -178,6 +222,10 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
           </li>
           <li>
             <span className="font-mono text-xs">POST /api/backtests</span> — replay a candidate
+          </li>
+          <li>
+            <span className="font-mono text-xs">POST /api/backtests/sweep</span> — search parameter
+            space
           </li>
           <li>
             <span className="font-mono text-xs">POST /api/bots</span> — promote{" "}
@@ -330,9 +378,23 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
                 className="flex min-h-[8rem] w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
               />
             </div>
-            <Button type="button" onClick={() => void runBacktest()} disabled={busy !== null}>
-              {busy === "backtest" ? "Running…" : "Run backtest"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => void runBacktest()} disabled={busy !== null}>
+                {busy === "backtest" ? "Running…" : "Run backtest"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => void runSweep()}
+                disabled={busy !== null}
+              >
+                {busy === "sweep" ? "Sweeping…" : "Sweep parameters"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sweep searches the selected alpha&apos;s published min/max (≤50 combos) and fills the
+              winning parameters.
+            </p>
           </div>
         </Card>
       </div>
@@ -341,6 +403,68 @@ export function AlphaLab({ alphas }: AlphaLabProps) {
         <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
+      )}
+
+      {sweep && (
+        <Card>
+          <CardTitle>Parameter sweep</CardTitle>
+          <CardDescription>
+            {sweep.combinations} combination{sweep.combinations === 1 ? "" : "s"} · ranked by Sharpe,
+            then P&amp;L. In-sample only.
+            {sweep.winner
+              ? ` Winner score ${sweep.winner.score.toFixed(3)}.`
+              : ""}
+          </CardDescription>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Parameters</TableHead>
+                <TableHead className="text-right">P&amp;L</TableHead>
+                <TableHead className="text-right">Trades</TableHead>
+                <TableHead className="text-right">Hit rate</TableHead>
+                <TableHead className="text-right">Sharpe</TableHead>
+                <TableHead className="text-right">Max DD</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sweep.results.map((row, index) => (
+                <TableRow key={JSON.stringify(row.parameters)}>
+                  <TableCell>
+                    <button
+                      type="button"
+                      className="text-left font-mono text-xs hover:underline"
+                      onClick={() => {
+                        const next: Record<string, string> = {};
+                        for (const [name, value] of Object.entries(row.parameters)) {
+                          next[name] = String(value);
+                        }
+                        setParamValues(next);
+                      }}
+                    >
+                      {index === 0 ? "★ " : ""}
+                      {Object.entries(row.parameters)
+                        .map(([name, value]) => `${name}=${Number(value.toFixed(4))}`)
+                        .join(" · ")}
+                    </button>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatUsd(row.metrics.totalPnl)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{row.metrics.trades}</TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {(row.metrics.hitRate * 100).toFixed(0)}%
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {row.metrics.sharpe === null ? "n/a" : row.metrics.sharpe.toFixed(2)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {(row.metrics.maxDrawdown * 100).toFixed(1)}%
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {scan && (

@@ -15,6 +15,7 @@ import { GET as alphasGet } from "@/app/api/alphas/route";
 import { POST as alphasScanPost } from "@/app/api/alphas/scan/route";
 import { POST as historyPost } from "@/app/api/markets/[id]/history/route";
 import { POST as backtestsPost } from "@/app/api/backtests/route";
+import { POST as sweepPost } from "@/app/api/backtests/sweep/route";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const describeIfDb = DATABASE_URL ? describe : describe.skip;
@@ -295,5 +296,45 @@ describeIfDb("API integration (real database)", () => {
     expect(body.metrics.ticks).toBe(2);
     expect(body.metrics.trades).toBeGreaterThan(0);
     expect(body.limitations.length).toBeGreaterThan(0);
+  });
+
+  it("POST /api/backtests/sweep ranks an explicit grid", async () => {
+    const response = await sweepPost(
+      jsonRequest("http://test/api/backtests/sweep", {
+        method: "POST",
+        body: JSON.stringify({
+          alphaId: "threshold_yes",
+          marketIds: ["integration-test-market"],
+          grid: { buyYesBelow: [0.15, 0.35] },
+          startingBalance: 10_000,
+          maxPositionSize: 50,
+          bars: [
+            {
+              marketId: "integration-test-market",
+              capturedAt: "2026-01-01T00:00:00.000Z",
+              yesPrice: 0.2,
+              noPrice: 0.8,
+              volume24h: 1_000,
+            },
+            {
+              marketId: "integration-test-market",
+              capturedAt: "2026-01-01T00:05:00.000Z",
+              yesPrice: 0.5,
+              noPrice: 0.5,
+              volume24h: 1_000,
+            },
+          ],
+        }),
+      }),
+    );
+    expect(response.status).toBe(201);
+    const body = await readJson<{
+      combinations: number;
+      winner: { parameters: { buyYesBelow: number } };
+      results: Array<{ metrics: { trades: number } }>;
+    }>(response);
+    expect(body.combinations).toBe(2);
+    expect(body.winner.parameters.buyYesBelow).toBe(0.35);
+    expect(body.results[0]?.metrics.trades).toBeGreaterThan(0);
   });
 });

@@ -29,6 +29,12 @@ export const ALPHA_RESEARCH_PLAYBOOK: AlphaPlaybookStep[] = [
   {
     step: 5,
     method: "POST",
+    path: "/api/backtests/sweep",
+    purpose: "Search the catalog alpha's parameter space (≤50 combos, in-sample)",
+  },
+  {
+    step: 6,
+    method: "POST",
     path: "/api/bots",
     purpose: "Promote a surviving alpha to a paper bot (strategy.type=alpha)",
   },
