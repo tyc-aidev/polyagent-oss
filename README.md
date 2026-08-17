@@ -65,6 +65,10 @@ The web service runs at [http://localhost:3000](http://localhost:3000) with an i
 | `CRON_SECRET` | — | Required in production for `/api/internal/*` scheduler routes |
 | `FEATURE_SOURCE_FIXTURE` | unset | Set `1`/`true` to enable the in-process fixture FeatureSource |
 | `FEATURE_SOURCE_FIXTURE_JSON` | — | Optional `{ "marketId": { "key": value } }` extras for the fixture source |
+| `LIVETENNIS_API_KEY` | unset | Live Tennis API key; unset = tennis FeatureSource disabled, nothing else changes |
+| `LIVETENNIS_API_BASE` | `https://api.livetennisapi.com/api/public/v1` | Live Tennis API base URL |
+| `LIVETENNIS_MATCH_MAP` | — | Optional `{ "marketId": matchId }` explicit market → match bindings |
+| `LIVETENNIS_CACHE_TTL_SECONDS` | `60` | Live-matches cache TTL for the tennis source |
 
 See [`.env.example`](.env.example) for a full template.
 
@@ -153,7 +157,28 @@ To backtest an event-state hypothesis, attach `event` on inline or imported bars
 
 The 5-minute harvester attaches enabled FeatureSource extras to each new snapshot (`harvest.withEvent`). Harvested rows stay price-only when every source is disabled (the default).
 
-To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Tennis / other event APIs are follow-up PRs — see issue #32 / #29.
+To add a source: implement `FeatureSource` (`id`, `enabled()`, `enrich({ market, features })`), register it in `apps/web/src/lib/alpha/sources/registry.ts`, keep it REST-only on the demo path, and match markets by explicit `marketId` (optional name/time helper in `sources/match.ts`). Other event APIs (other sports, news) are follow-up PRs — see issue #32 / #29.
+
+### Tennis FeatureSource (optional)
+
+`sources/tennis.ts` fills `features.event.tennis` with ground-truth match state from the [Live Tennis API](https://livetennisapi.com). *Disclosure: the API is operated by this source's contributor.* Disabled unless `LIVETENNIS_API_KEY` is set — a fresh `docker compose up` with no keys is unchanged, and a down or rate-limited API never blocks harvest, ticks, or catalog evaluation (the source fails soft to "no extras").
+
+Markets bind to matches by explicit id first (`LIVETENNIS_MATCH_MAP='{"<gammaMarketId>": <tennisMatchId>}'`; match ids come from `GET /matches`). Without a binding, a fallback heuristic requires both player names in the market question and refuses ambiguous matches rather than guessing.
+
+Extras (all numeric-coercible, so `event_threshold` can trade them directly):
+
+| Extra | Meaning |
+|-------|---------|
+| `favoriteDownBreak` | Better-ranked player is net down a break in the current set (down ≥2 games, or down 1 while receiving) |
+| `breakPoint` | Current server faces a break point (receiver at AD, or receiver at 40 vs 0/15/30); never in tiebreaks |
+| `inTiebreak` | Current game is a tiebreak |
+| `favoriteServing` | Better-ranked player is serving |
+| `favoriteSetsLead` | Favorite's sets won minus opponent's |
+| `favoriteGamesLead` | Favorite's games minus opponent's in the current set |
+
+"Favorite" = the better-ranked player; the `favorite*` extras are omitted (never guessed) when either ranking is missing or tied, as are values a score snapshot cannot support.
+
+The source is REST-only and free-tier friendly: one cached `GET /matches?status=live` per TTL (default 60s) serves every market in a tick, and failures are negative-cached so outages are not hammered. Plain numbers for the free tier: **30 requests/minute, 100 requests/day** — enough to develop and test against live matches (~100 minutes of 60s-cadence polling per day), not enough for continuous all-day polling, which needs a paid tier. The paid tiers also add a push WebSocket feed and model win-probability fields; this source deliberately uses neither.
 
 `GET /api/alphas/scan` ranks `confidence × |score|` on top-N live Gamma markets (or `marketIds`). Filters: `alphaId`/`alphaIds`, `minConfidence`, `action`, `lookback`, `includeHolds`, `hasEvent`. A live Gamma mid does not erase harvested `event` extras — features carry the most recent tape bag forward. `POST` accepts the same body as JSON.
 
