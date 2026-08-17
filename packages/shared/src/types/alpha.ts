@@ -19,18 +19,20 @@ export interface AlphaDefinition {
   defaultParameters: Record<string, number>;
 }
 
+export type EventFeatureValue = number | string | boolean | null;
+
+/** Namespaced extras from optional FeatureSources, keyed by source id. */
+export type EventFeatureBag = Record<string, Record<string, EventFeatureValue>>;
+
 export interface PriceBar {
   marketId: string;
   capturedAt: Date;
   yesPrice: number;
   noPrice: number;
   volume24h: number;
+  /** Optional event-state extras as of this bar (inline tape or imported). */
+  event?: EventFeatureBag;
 }
-
-export type EventFeatureValue = number | string | boolean | null;
-
-/** Namespaced extras from optional FeatureSources, keyed by source id. */
-export type EventFeatureBag = Record<string, Record<string, EventFeatureValue>>;
 
 export interface MarketFeatures {
   marketId: string;

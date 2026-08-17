@@ -4,6 +4,6 @@ export const BACKTEST_LIMITATIONS = [
   "No trading fees on open/close; a 2% fee is applied only to positive settlement profit.",
   "Features at time T use only bars with capturedAt ≤ T (no lookahead).",
   "Sampling is irregular (tick cadence or imported timestamps). Sharpe is annualized from mean inter-bar Δt when possible.",
-  "Survivorship: only markets you observed or imported appear in the report.",
+  "Event extras on a bar (inline `event` or imported snapshot JSON) feed event_threshold. Harvested rows are price-only unless extras were imported.",
   "Paper trading only. Not financial advice and not a live execution path.",
 ] as const;

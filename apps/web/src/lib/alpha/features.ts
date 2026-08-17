@@ -66,5 +66,6 @@ export function computeMarketFeatures(
     distanceFromFair: last.yesPrice - 0.5,
     meanReversionResidual: yesPrices.length >= 2 ? last.yesPrice - sma : null,
     sampleSize: sorted.length,
+    event: last.event,
   };
 }

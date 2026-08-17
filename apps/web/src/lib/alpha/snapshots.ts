@@ -1,4 +1,4 @@
-import type { PriceBar, PriceBarInput } from "@polyagent/shared";
+import type { EventFeatureBag, PriceBar, PriceBarInput } from "@polyagent/shared";
 import { getPrismaAsync } from "@/lib/db";
 
 export interface HistoryQuery {
@@ -14,6 +14,7 @@ export function toPriceBar(input: PriceBarInput, fallbackMarketId: string): Pric
     yesPrice: input.yesPrice,
     noPrice: input.noPrice,
     volume24h: input.volume24h,
+    event: input.event,
   };
 }
 
@@ -38,6 +39,7 @@ export async function listMarketHistory(marketId: string, query: HistoryQuery = 
     yesPrice: row.yesPrice,
     noPrice: row.noPrice,
     volume24h: row.volume24h,
+    event: eventFromJson(row.event),
   }));
 }
 
@@ -66,6 +68,7 @@ export async function listHistoryForMarkets(
     yesPrice: row.yesPrice,
     noPrice: row.noPrice,
     volume24h: row.volume24h,
+    event: eventFromJson(row.event),
   }));
 }
 
@@ -79,7 +82,13 @@ export async function importMarketHistory(marketId: string, bars: PriceBar[]): P
       noPrice: bar.noPrice,
       volume24h: bar.volume24h,
       capturedAt: bar.capturedAt,
+      event: bar.event ?? undefined,
     })),
   });
   return result.count;
+}
+
+function eventFromJson(value: unknown): EventFeatureBag | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as EventFeatureBag;
 }
